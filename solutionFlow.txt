@@ -1,0 +1,7 @@
+1.create AST:
+    1) determine structure of tree node
+    2) modify "syntax.y" and "lexical": modify implementation of tree node and tree;
+
+2.recursion down to perform semantic analysis
+
+
