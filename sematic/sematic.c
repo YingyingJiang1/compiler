@@ -4,12 +4,8 @@
 #include "errorType.h"
 #include "symbol.h"
 #include "st.h"
-#include "../ast/ast.h"
+#include "../innerCode/genCode.h"
 
-//!!!!!!!!!!!!!!! modify implementation of notInt notFloat ..., refering notStructType.(main to handle array type)
-
-//#define notInt(expType) expType.type != INT &&expType.type != INT_CONSTANT
-//#define notFloat(expType) expType.type != FLOAT &&expType.type != FLOAT_CONSTANT
 #define isInt(expType) expType.type == INT || expType.type == INT_CONSTANT || \
                            (expType.type == INT_ARRAY && expType.dimension == 0)
 #define isFLoat(expType) expType.type == FLOAT || expType.type == FLOAT_CONSTANT || \
@@ -118,6 +114,7 @@ void checkProgram(Node *ast)
         }
     }
 
+    // check function declared but not defined
     for (int i = 0; i < nameCount; ++i)
     {
         Symbol *sym = findSymbol(funcsName[i]);
@@ -218,7 +215,8 @@ int initCheck(Node *assignNode, Type varType)
 /*
 check all variables to be defined, if legal then add the variable to st.
 para: varDef-> GLOBAL_VAR_DEF or LOCAL_DEF node, st->symbol table,  tSize->size of st
-        dType-> data type of variable(INT, FLOAT, STRUCT), symAddr->only useful for struct type variable
+        type(type, symAddr) ->  type.type: data type of variable(INT, FLOAT, STRUCT), 
+                                type.symAddr->only useful for struct type variable
 */
 void handleVarList(SymbolTable st, int tSize, Node *varDef, Type type)
 {
@@ -226,12 +224,14 @@ void handleVarList(SymbolTable st, int tSize, Node *varDef, Type type)
     {
         Node *varNode;
         Symbol *sym;
+
         if (varDef->children[i]->type == ASSIGN_OP)
         {
             varNode = varDef->children[i]->children[0];
         }
         else
             varNode = varDef->children[i];
+
         // printf("136:name:%s\n", varNode->val);
         sym = lookupST(st, tSize, varNode->val);
         if (sym)
@@ -242,10 +242,18 @@ void handleVarList(SymbolTable st, int tSize, Node *varDef, Type type)
         else
         {
             Type varType;
-            varType.symAddr = addVar(st, tSize, varNode, type);
+            Symbol* sym = addVar(st, tSize, varNode, type);
+            varType.symAddr = sym;
             varType.type = type.type;
             if (varDef->children[i]->type == ASSIGN_OP)
                 initCheck(varDef->children[i], varType);
+
+            // generate 3 address code: DEC x [size]
+            if(type.type == STRUCT)
+            {
+                genDEC(&type, sym);
+                sym->var.no = varNO - 1;
+            }
         }
     }
 }
@@ -317,6 +325,14 @@ void checkCompSt(Node *pNode, Type retType)
     // put paras of function into lst
     if (pNode->type == FUNC_DEF)
     {
+        /* 
+        generate 3 address code:
+        FUNCTION f
+        PARAM x
+        ...
+        */
+        genFuncHead(pNode);
+
         size = pNode->children[1]->num;
         Symbol *funcSym = findSymbol(pNode->children[1]->val);
         compSt = pNode->children[2];
@@ -324,21 +340,27 @@ void checkCompSt(Node *pNode, Type retType)
             size += compSt->children[0]->num * 5;
         if (size > 0)
         {
+            int paraNum = pNode->children[1]->num;
             lst = (Symbol **)malloc(sizeof(Symbol *) * size);
             memset(lst, 0, sizeof(Symbol *) * size);
             push(lst, size);
-            for (int i = 0; i < pNode->children[1]->num; ++i)
+            for (int i = 0; i < paraNum; ++i)
             {
                 Type type;
                 Node *typeNode = pNode->children[1]->children[i];
                 Node *idNode = typeNode->children[0];
+                Symbol *sym;
                 getType(typeNode, &type);
                 if (type.type == STRUCT)
                     idNode = typeNode->children[typeNode->num - 1];
-                addVar(lst, size, idNode, type);
+                sym = addVar(lst, size, idNode, type);
+
+                // record NO. of each parameter
+                sym->var.no = varNO - (paraNum - i);
             }
         }
     }
+
     for (int i = 0; i < compSt->num; ++i)
     {
         if (compSt->children[i]->type == LOCAL_DEF_LIST)
@@ -365,6 +387,7 @@ void checkCompSt(Node *pNode, Type retType)
             // check whether last statement of function is a RETURN statement(not necessary)
         }
     }
+
     // delete local symbol table in this block scope when exiting this block
     if (lst)
         pop();

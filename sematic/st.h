@@ -2,6 +2,9 @@
 #define ST_H
 #include "symbol.h"
 
+extern Symbol *globalST[];
+
+
 SymbolTable createST(int size);
 Symbol* findSymbol(char* name);
 Symbol* addVar(SymbolTable st, int tSize, Node* idNode, Type type);

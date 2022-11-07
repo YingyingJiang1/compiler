@@ -46,10 +46,10 @@ typedef struct Node
 
 extern Node* root;
 
+
 Node* genNode(int lineNo, NodeType type, char* val);
 Node* createAST(Node* root, int argc,...);
 void mergeNodes(Node* t, NodeType type);
-
-
+void deleteTree(Node* t);
 
 #endif

@@ -2,12 +2,14 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include"ast/ast.h"
+#include "innerCode/innerCode.h"
 extern void yyrestart(FILE*);
 extern int yyparse();
 extern FILE* yyin;
 int isLexError = 0;
 int isSynError = 0;
 Node* root = NULL;
+
 //void printAST(Node* t);
 void deleteTree(Node* t);
 NodeType checkProgram(Node* ast);
@@ -31,22 +33,11 @@ int main(int argc, char** argv)
     if(!isSynError && !isLexError)
     {
         //printAST(root);
-        checkProgram(root);
+        //checkProgram(root);
+        gen3addrCode();
     }    
     deleteTree(root);
     return 0;
 }
 
 
-void deleteTree(Node* t)
-{
-    if(t == NULL)
-        return;
-    for(int i = 0; i < t->num; ++i)
-        deleteTree(t->children[i]);        
-    if(t->children)
-        free(t->children);  
-    if(t)
-        free(t);
-    
-}

@@ -126,3 +126,18 @@ void mergeNodes(Node* t, NodeType type)
 }
 
 
+
+void deleteTree(Node* t)
+{
+    if(t == NULL)
+        return;
+    for(int i = 0; i < t->num; ++i)
+        deleteTree(t->children[i]);        
+    if(t->children)
+        free(t->children);  
+    if(t)
+        free(t);
+    
+}
+
+

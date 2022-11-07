@@ -52,7 +52,8 @@ typedef struct Symbol
             DataType type;
             int dimension;
             int* eachDimSize;
-            struct Symbol* structInfo;      
+            struct Symbol* structInfo;  
+            int no;     // NO. of each variable, this is useful to generate 3 address code
             //char val[VALUE_SIZE];               
         }var;
 
