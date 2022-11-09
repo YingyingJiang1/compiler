@@ -5,13 +5,15 @@
 #define L_SIZE 50
 #define VALUE_SIZE 50
 #define STACK_SIZE 300
+#define NAME_SIZE 50
 
 typedef enum SymbolType
 {
     VAR = 1,
     FUNC,
     FUNC_DEC_,   // dedicates function is declared but not defined(add '_' for distinguishing with NodeType)
-    STRUCTURE
+    STRUCTURE,
+    UNFINISHED_STRUCTURE
 }SymbolType;
 
 typedef enum DataType
@@ -38,7 +40,7 @@ typedef struct Type
 
 typedef struct Symbol
 {
-    char name[50];
+    char name[NAME_SIZE];
     int lineno;
     SymbolType symType;
 
@@ -50,7 +52,13 @@ typedef struct Symbol
             DataType type;
             int dimension;
             int* eachDimSize;
-            struct Symbol* structInfo;      
+            struct Symbol* structInfo;  
+
+            /*
+             address of operand, this is useful to generate 3 address code. 
+             e.g: in src code, a variable named 'n' may be an operand 'v1' in 3 address code.
+             */
+            Operand* op;     
             //char val[VALUE_SIZE];               
         }var;
 
@@ -66,6 +74,7 @@ typedef struct Symbol
         struct
         {
             int memNums;
+            int size;
             struct Symbol**members; // store struct members in symbol table(this table has a struct scope)
         }structure;
     };

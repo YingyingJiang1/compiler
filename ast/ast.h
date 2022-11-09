@@ -14,8 +14,8 @@ typedef enum NodeType
     BASE_TYPE,  //int, float
     STRUCT_TYPE,    //struct
     IDENTIFIER,     // name of var, struct, func
-    INTEGER,
-    FLOAT_POINT = 10,
+    INTEGER,        // constant int
+    FLOAT_POINT = 10,   // constant float
     INT_TYPE,        //int type
     FLOAT_TYPE,    // float type
     TOKEN_OTHER,    // comma...

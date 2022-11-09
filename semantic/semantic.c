@@ -4,12 +4,8 @@
 #include "errorType.h"
 #include "symbol.h"
 #include "st.h"
-#include "../ast/ast.h"
+#include "../innerCode/genCode.h"
 
-//!!!!!!!!!!!!!!! modify implementation of notInt notFloat ..., refering notStructType.(main to handle array type)
-
-//#define notInt(expType) expType.type != INT &&expType.type != INT_CONSTANT
-//#define notFloat(expType) expType.type != FLOAT &&expType.type != FLOAT_CONSTANT
 #define isInt(expType) expType.type == INT || expType.type == INT_CONSTANT || \
                            (expType.type == INT_ARRAY && expType.dimension == 0)
 #define isFLoat(expType) expType.type == FLOAT || expType.type == FLOAT_CONSTANT || \
@@ -29,6 +25,9 @@
 
 #define varDataType(symInfo) symInfo->var.type
 #define isArrayType(dataType) (dataType) == INT_ARRAY || (dataType) == FLOAT_ARRAY || (dataType) == STRUCT_ARRAY
+
+
+int errorOccurred = 0;
 
 void getRetType(Node *typeNode, Type *type);
 void checkExp(Node *exp, Type *expRet);
@@ -118,6 +117,7 @@ void checkProgram(Node *ast)
         }
     }
 
+    // check function declared but not defined
     for (int i = 0; i < nameCount; ++i)
     {
         Symbol *sym = findSymbol(funcsName[i]);
@@ -196,6 +196,7 @@ void defFunc(Node *funcDef)
     else
         addFunc(retType, cur->children[1], FUNC);
 }
+
 /*
 check initialization of variable, if legal initialization then return 1, else return 0
 */
@@ -208,6 +209,7 @@ int initCheck(Node *assignNode, Type varType)
     // printf("108:expType:type:%d, name:%s, structInfo:%x\n", expType.type, expType.symAddr->name, expType.symAddr->var.structInfo);
     if (expType.type != ERROR && !equal(varType, expType))
     {
+        errorOccurred = 1;
         printf("Error type %d at Line %d: operands type mismatch.\n",
                EXP_TYPE_MISMATCH, assignNode->lineNo);
         return 0;
@@ -218,7 +220,8 @@ int initCheck(Node *assignNode, Type varType)
 /*
 check all variables to be defined, if legal then add the variable to st.
 para: varDef-> GLOBAL_VAR_DEF or LOCAL_DEF node, st->symbol table,  tSize->size of st
-        dType-> data type of variable(INT, FLOAT, STRUCT), symAddr->only useful for struct type variable
+        type(type, symAddr) ->  type.type: data type of variable(INT, FLOAT, STRUCT), 
+                                type.symAddr->only useful for struct type variable
 */
 void handleVarList(SymbolTable st, int tSize, Node *varDef, Type type)
 {
@@ -226,12 +229,14 @@ void handleVarList(SymbolTable st, int tSize, Node *varDef, Type type)
     {
         Node *varNode;
         Symbol *sym;
+
         if (varDef->children[i]->type == ASSIGN_OP)
         {
             varNode = varDef->children[i]->children[0];
         }
         else
             varNode = varDef->children[i];
+
         // printf("136:name:%s\n", varNode->val);
         sym = lookupST(st, tSize, varNode->val);
         if (sym)
@@ -242,10 +247,26 @@ void handleVarList(SymbolTable st, int tSize, Node *varDef, Type type)
         else
         {
             Type varType;
-            varType.symAddr = addVar(st, tSize, varNode, type);
+            Symbol* sym = addVar(st, tSize, varNode, type);
+            varType.symAddr = sym;
             varType.type = type.type;
             if (varDef->children[i]->type == ASSIGN_OP)
+            {
                 initCheck(varDef->children[i], varType);
+                if(!errorOccurred)
+                {
+                    Operand* result = genVarOp(sym);
+                    Operand* op1 = translateExp(varDef->children[i]->children[1]);
+                    genCode(ASSIGN, 2, op1, result);
+                }
+            }                
+
+            // generate 3 address code: DEC x [size]
+            if(type.type == STRUCT || sym->var.dimension > 0)
+            {
+                int size = calSize(sym);
+                genDEC(sym, size);    
+            }
         }
     }
 }
@@ -283,7 +304,7 @@ void defVar(SymbolTable st, int tSize, Node *varDef)
         else
         {
             Symbol *sym = lookupST(globalST, G_SIZE, structNode->children[0]->val);
-            //printf("298:name:%s\n", structNode->children[0]->val);
+            // printf("298:name:%s\n", structNode->children[0]->val);
             if (sym)
             {
                 printf("Error type %d at Line %d: symbol \"%s\" was declared before.\n",
@@ -317,6 +338,16 @@ void checkCompSt(Node *pNode, Type retType)
     // put paras of function into lst
     if (pNode->type == FUNC_DEF)
     {
+        /* 
+        generate 3 address code:
+        FUNCTION f
+        */
+       if(errorOccurred)
+            goto L;
+        Operand* op1 = genOp(NAME, pNode->children[1]->val);
+        genCode(FUNCTION, 1, op1);
+
+        L:
         size = pNode->children[1]->num;
         Symbol *funcSym = findSymbol(pNode->children[1]->val);
         compSt = pNode->children[2];
@@ -324,21 +355,32 @@ void checkCompSt(Node *pNode, Type retType)
             size += compSt->children[0]->num * 5;
         if (size > 0)
         {
+            int paraNum = pNode->children[1]->num;
             lst = (Symbol **)malloc(sizeof(Symbol *) * size);
             memset(lst, 0, sizeof(Symbol *) * size);
             push(lst, size);
-            for (int i = 0; i < pNode->children[1]->num; ++i)
+            for (int i = 0; i < paraNum; ++i)
             {
                 Type type;
                 Node *typeNode = pNode->children[1]->children[i];
                 Node *idNode = typeNode->children[0];
+                Symbol *sym;
                 getType(typeNode, &type);
                 if (type.type == STRUCT)
                     idNode = typeNode->children[typeNode->num - 1];
-                addVar(lst, size, idNode, type);
+                sym = addVar(lst, size, idNode, type);
+
+                if(!errorOccurred)
+                {
+                    // generate code: PARAM x
+                    Operand* op1 = genVarOp(sym);
+                    genCode(PARAM, 1, op1);
+                }
+                
             }
         }
     }
+
     for (int i = 0; i < compSt->num; ++i)
     {
         if (compSt->children[i]->type == LOCAL_DEF_LIST)
@@ -365,6 +407,7 @@ void checkCompSt(Node *pNode, Type retType)
             // check whether last statement of function is a RETURN statement(not necessary)
         }
     }
+
     // delete local symbol table in this block scope when exiting this block
     if (lst)
         pop();
@@ -499,7 +542,6 @@ int checkArgs(Symbol *symInfo, Node *pNode)
     return 1;
 }
 
-//!!!!!!!!!!!!!!!!!!!!! paras can't be hash!!!!!!!!!!!
 
 void checkStmt(Node *stmt, Type retType)
 {
@@ -509,8 +551,32 @@ void checkStmt(Node *stmt, Type retType)
     case WHILE_LOOP:
     {
         Type expType;
+
+        Operand* label1 = genLABEL();     
+
         checkExp(stmt->children[0], &expType);
+        if(errorOccurred)
+            goto L;
+
+        // no error occurred then generate 3 address code
+        CodeList trueList = NULL;
+        CodeList falseList = NULL;
+        translateBoolExp(stmt->children[0], &trueList, &falseList);
+        Operand* label2 = genLABEL();
+        backpatch(trueList, label2);
+        free(trueList);
+
+        L:
         checkStmt(stmt->children[1], retType);
+        if(errorOccurred)
+            goto L1;
+
+        genGOTO(label1);
+        Operand* label3 = genLABEL();
+        backpatch(falseList, label3);
+        free(falseList);
+        
+        L1:
         break;
     }
     // BRANCH has two or three children: the first is conditon(EXP), other are stmt
@@ -518,8 +584,49 @@ void checkStmt(Node *stmt, Type retType)
     {
         Type expType;
         checkExp(stmt->children[0], &expType);
-        for (int i = 1; i < stmt->num; ++i)
-            checkStmt(stmt->children[i], retType);
+        if(errorOccurred)
+            goto L;
+
+        CodeList trueList = NULL;
+        CodeList falseList = NULL;
+        translateBoolExp(stmt->children[0], &trueList, &falseList);
+
+        L:
+        // IF EXP S1
+        Operand* label1 = genLABEL();
+        checkStmt(stmt->children[1], retType);
+        if(errorOccurred)
+            goto L1;
+        
+        backpatch(trueList, label1);
+        free(trueList);
+
+        L1:
+        // ELSE S2
+        if(stmt->num == 3)
+        {
+            checkStmt(stmt->children[2], retType);
+            if(errorOccurred)
+                goto L2;
+
+            // has an ELSE statment, so add a GOTO statement after S1, but the label unknowed now.
+            int index = genGOTO(NULL);
+
+            Operand* label2 = genLABEL();
+            backpatch(falseList, label2);
+            free(falseList);
+            
+            // set label of GOTO statement generated before
+            Operand* label3 = genLABEL();
+            codes[index]->_3ops.result = label3;
+        }  
+        else
+        {
+            Operand* label2 = genLABEL();
+            backpatch(falseList, label2);
+            free(falseList);
+        }          
+        L2:
         break;
     }
     // RETURN EXP: EXP is children of RETURN node
@@ -536,18 +643,17 @@ void checkStmt(Node *stmt, Type retType)
         checkExp(stmt->children[0], &expType);
 
         // these steps are for making symAddr points to a variable symbol, so then can use function equal
-        tmpSym = (Symbol *)malloc(sizeof(Symbol));
-        memset(tmpSym, 0, sizeof(Symbol));
-        tmpSym->symType = VAR;
-        tmpSym->var.dimension = retType.dimension;
-        tmpSym->var.structInfo = retType.symAddr;
-        tmpSym->var.type = retType.type;
-        retType.symAddr = tmpSym;
+        genTmpVar(&retType);
 
         if (expType.type != ERROR && !equal(expType, retType))
             printf("Error type %d at Line %d: return value mismatch.\n",
                    RETURN_VALUE_MISMATCH, stmt->lineNo);
-        free(tmpSym);
+        else    // no error then generate 3 address code
+        {            
+            Operand* op1 = translateExp(stmt->children[0]);
+            genRETURN(op1);
+        }
+        free(retType.symAddr);
         break;
     }
     case COMP_ST:
@@ -555,20 +661,20 @@ void checkStmt(Node *stmt, Type retType)
         checkCompSt(stmt, retType);
         break;
     }
-    case ARITHMATIC_OP:
-    case RELOP_OP:
-    case LOGICAL_OP:
-    case ASSIGN_OP:
-    case FUNC_CALL:
-    case ARRAY_REFERENCE:
-    case MEMBER_ACCESS_OP:
+    //case ARITHMATIC_OP,RELOP_OP, LOGICAL_OP, ASSIGN_OP, FUNC_CALL, ARRAY_REFERENCE, MEMBER_ACCESS_OP:
+    default:
     {
         Type type;
         checkExp(stmt, &type);
+        if(type.type == ERROR)
+            errorOccurred = 1;
+        
+        // no error occurred then generate code
+        if(!errorOccurred)   
+            translateExp(stmt);
+                    
         break;
     }
-    default:
-        break;
     }
 }
 
@@ -656,7 +762,7 @@ void checkExp(Node *exp, Type *expRet)
         if (exp->num == 1)
         {
             checkExp(exp->children[0], expRet);
-            if (expRet->symAddr && (expRet->symAddr->symType == STRUCT || expRet->symAddr->symType == FUNC))
+            if (expRet->symAddr && expRet->symAddr->symType != VAR)
                 printf("Error type %d at Line %d: operand and operator mismatch.\n",
                        OPERAND_TYPE_MISMATCH, exp->lineNo);
             return;
@@ -770,6 +876,7 @@ void checkExp(Node *exp, Type *expRet)
             return;
         }
         // check exp at the right of '.'
+        /*  ????? this if statement is useless, right of '.' is always an IDENTIFIER */
         if (exp->children[1]->type == MEMBER_ACCESS_OP)
         {
             checkExp(exp->children[1], expRet);
@@ -783,6 +890,7 @@ void checkExp(Node *exp, Type *expRet)
             }
             return;
         }
+
         else if (exp->children[1]->type == IDENTIFIER)
         {
             (*expRet) = findStructMem(exp1Type.symAddr->var.structInfo, exp->children[1]->val);

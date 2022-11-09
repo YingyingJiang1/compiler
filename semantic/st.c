@@ -141,6 +141,37 @@ Symbol *genVarSym(Node *idNode, Type type)
     return varSym;
 }
 
+int calStructSize(Symbol* sym)
+{
+    int size = 0;
+    Symbol** members = sym->structure.members;
+    for(int i = 0; i < sym->structure.memNums; ++i)
+    {
+        Type type;
+        type.type = members[i]->var.type;
+        type.symAddr = members[i]->var.structInfo;
+        size += calVarSize(&type, members[i]);
+    }
+    return size;
+
+}
+
+int calSize(Symbol* varSym)
+{
+    int size = 0, unit, num = 1;
+    if(varSym->var.type == STRUCT)
+        unit = varSym->var.structInfo->structure.size;
+    else
+        unit = 4;
+    
+    for(int i = 0; i < varSym->var.dimension; ++i)
+    {
+        num *= varSym->var.eachDimSize[i];
+    }
+    size = unit * num;
+    return size;
+}
+
 /*
 fill in domains of the struct symbol 'structSym'
 para: structNode-> STRUCT_TYPE node, structSym: points to a symbol to be filled in
@@ -173,9 +204,7 @@ void fillInStructSymbol(Node *structNode, Symbol* structSym)
         Node *def = defList->children[i];
         Type type;
         getType(def->children[0], &type);
-        //printf("176:type:%d, num:%d\n", def->children[0]->type, def->children[0]->num);
-        //printf("type: type:%d\n", type.type);
-
+        
         if(def->children[0]->type == STRUCT_TYPE)
         {
             // use struct name to define member variable 
@@ -227,7 +256,13 @@ void fillInStructSymbol(Node *structNode, Symbol* structSym)
                     if(nameExisted(structSym->structure.members, idNode->val))
                         printf("Error type %d at Line %d: struct domain name duplicated.\n",
                             STRUCT_MEMBER_DEFINED_INVALID, idNode->lineNo);
-                    structSym->structure.members[count++] = genVarSym(idNode,type);                    
+                    else
+                    {
+                        Symbol* sym = genVarSym(idNode,type);  
+                        structSym->structure.members[count++] = sym;
+                        structSym->structure.size += calSize(sym);  
+
+                    }                                 
                 }
             }
         }
@@ -341,32 +376,7 @@ void addFunc(Type retType, Node* funcHead, SymbolType sType)
 }     
 
 
-// copy symbol(this symbol is a pointer to a concreate struct Symbol) in src to dest
-void copyST(SymbolTable dest, int dSize, SymbolTable src, int sSize)
-{
-    Symbol *tmp;
-    Symbol *cur;
-    int index = 0;
-    for(int i = 0; i < sSize; ++i)
-    {
-        if(src[i])
-        {           
-            cur = src[i];
-            while(cur)
-            {
-                index = hash_pjw(cur->name, dSize);
 
-                tmp = (Symbol*)malloc(sizeof(Symbol)); 
-                memcpy(tmp, cur, sizeof(Symbol));
-                tmp->next = NULL;
-                tmp->next = dest[index];
-                dest[index] = tmp;
-
-                cur = cur->next;
-            }         
-        }
-    }
-}
 
 void freeSymbol(Symbol *sym)
 {
