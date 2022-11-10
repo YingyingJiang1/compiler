@@ -1,5 +1,5 @@
 
-#line 3 "lex.yy.c"
+#line 3 ""
 
 #define  YY_INT_ALIGNED short int
 
@@ -552,8 +552,8 @@ extern int step;
 int yycolumn = 1;
 extern int isLexError;
 Node* genNode(int lineNo,  NodeType type, char* val);
-#line 556 "lex.yy.c"
-#line 557 "lex.yy.c"
+#line 556 ""
+#line 557 ""
 
 #define INITIAL 0
 
@@ -777,7 +777,7 @@ YY_DECL
     to look for further matches, so no reutrn in action may have impact on
     subsequent syntax parsing(I guess!)*/
     /* Node* genNode(int lineNo,  char* name, NodeType type, char* val) */
-#line 781 "lex.yy.c"
+#line 781 ""
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -1172,7 +1172,7 @@ YY_RULE_SETUP
 #line 234 "lexical.l"
 ECHO;
 	YY_BREAK
-#line 1176 "lex.yy.c"
+#line 1176 ""
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 

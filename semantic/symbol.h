@@ -1,6 +1,7 @@
 #ifndef SYMBOL_H
 #define SYMBOL_H
 #include "../ast/ast.h"
+#include "../innerCode/innerCode.h"
 #define G_SIZE 0X3FFF
 #define L_SIZE 50
 #define VALUE_SIZE 50

@@ -33,8 +33,10 @@ void getRetType(Node *typeNode, Type *type);
 void checkExp(Node *exp, Type *expRet);
 void checkCompSt(Node *compSt, Type retType);
 void checkStmt(Node *stmt, Type retType);
+void defFunc(Node *funcDef);
 void defVar(SymbolTable st, int tSize, Node *varDef);
 int equal(Type type1, Type type2);
+int isStructEqual(Symbol *s1, Symbol *s2);
 int retValueMatch(Type type1, Type type2);
 int parasTypeConsistent(Symbol *sym, Node *paraList);
 
@@ -43,6 +45,39 @@ extern Stack scope;
 char *funcsName[1000];
 int nameCount = 0;
 
+// add predefined function "read" and "write"
+void addPDfunc(int flag)
+{
+    Symbol* sym = (Symbol*)malloc(sizeof(Symbol));
+    memset(sym, 0, sizeof(Symbol));
+    sym->symType = FUNC;
+    int i;
+
+    if(flag == 0)
+    {        
+        strcpy(sym->name, "read");
+        sym->func.parac = 0;
+        sym->func.retType.type = INT;
+        sym->func.retType.symAddr = NULL;
+        i = hash_pjw("read", G_SIZE);
+    }
+    else
+    {
+        strcpy(sym->name, "write");
+        sym->func.parac = 1;
+        sym->func.paras = (Symbol**)malloc(sizeof(Symbol*));
+        Symbol* var = (Symbol*)malloc(sizeof(Symbol));
+        var->symType = VAR;
+        var->var.type = INT;
+        sym->func.paras[0] = var;
+        sym->func.retType.type = INT;
+        sym->func.retType.symAddr = NULL;
+        i = hash_pjw("write", G_SIZE);
+    }
+    sym->next = globalST[i];
+    globalST[i] = sym;
+}
+
 // root of ast is an EXT_DEF_LIST, its children node is either GLOABAL_VAR_DEF type or FUNC_DEF type.
 void checkProgram(Node *ast)
 {
@@ -50,6 +85,11 @@ void checkProgram(Node *ast)
     scope.top = -1;
     memset(scope.arr, 0, sizeof(void *) * STACK_SIZE);
     push(globalST, G_SIZE);
+
+    // add read()
+    addPDfunc(0);
+    // add write(int)
+    addPDfunc(1);
 
     // handle all defination first.
     for (int i = 0; i < ast->num; ++i)
@@ -571,7 +611,7 @@ void checkStmt(Node *stmt, Type retType)
         if(errorOccurred)
             goto L1;
 
-        genGOTO(label1);
+        genCode(JMP, 1, label1);
         Operand* label3 = genLABEL();
         backpatch(falseList, label3);
         free(falseList);
@@ -585,36 +625,33 @@ void checkStmt(Node *stmt, Type retType)
         Type expType;
         checkExp(stmt->children[0], &expType);
         if(errorOccurred)
-            goto L;
+            goto L2;
 
         CodeList trueList = NULL;
         CodeList falseList = NULL;
         translateBoolExp(stmt->children[0], &trueList, &falseList);
 
-        L:
         // IF EXP S1
         Operand* label1 = genLABEL();
-        checkStmt(stmt->children[1], retType);
-        if(errorOccurred)
-            goto L1;
-        
         backpatch(trueList, label1);
         free(trueList);
-
-        L1:
+        
+        L2:
+        checkStmt(stmt->children[1], retType);
         // ELSE S2
         if(stmt->num == 3)
         {
-            checkStmt(stmt->children[2], retType);
-            if(errorOccurred)
-                goto L2;
-
-            // has an ELSE statment, so add a GOTO statement after S1, but the label unknowed now.
-            int index = genGOTO(NULL);
+            // has an ELSE statment, so add a GOTO statement after S1, but the label is unknowed now.
+            genCode(JMP, 1, NULL);
+            int index = codeNum - 1;
 
             Operand* label2 = genLABEL();
             backpatch(falseList, label2);
             free(falseList);
+
+            checkStmt(stmt->children[2], retType);
+            if(errorOccurred)
+                goto L4;
             
             // set label of GOTO statement generated before
             Operand* label3 = genLABEL();
@@ -626,7 +663,7 @@ void checkStmt(Node *stmt, Type retType)
             backpatch(falseList, label2);
             free(falseList);
         }          
-        L2:
+        L4:
         break;
     }
     // RETURN EXP: EXP is children of RETURN node
@@ -649,9 +686,9 @@ void checkStmt(Node *stmt, Type retType)
             printf("Error type %d at Line %d: return value mismatch.\n",
                    RETURN_VALUE_MISMATCH, stmt->lineNo);
         else    // no error then generate 3 address code
-        {            
+        {          
             Operand* op1 = translateExp(stmt->children[0]);
-            genRETURN(op1);
+            genCode(RETURN , 1, op1);
         }
         free(retType.symAddr);
         break;

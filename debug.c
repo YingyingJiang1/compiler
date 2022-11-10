@@ -1,3 +1,4 @@
+/*
 #include<stdio.h>
 #include<stdlib.h>
 #include "ast/ast.h"
@@ -71,6 +72,7 @@ void printAST(Node* t)
     }
     
 }
+*/
 
 
 

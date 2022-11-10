@@ -4,6 +4,8 @@
 
 extern Symbol *globalST[];
 
+unsigned int hash_pjw(char *name, int size);
+
 // create a symbol table with a size of 'size'
 SymbolTable createST(int size);
 

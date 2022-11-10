@@ -1,31 +1,15 @@
-objs := main.o syntax.tab.o  ast/ast.o  sematic/sematic.o sematic/st.o
-	
-parser: $(objs)	
-	gcc  -g $(objs) -lfl -ly -o parser
+CC = gcc
+SRCS = $(shell find ./ -name "*.c" | sed "s/.\/lex.yy.c//g") 
+HEADS = $(shell find ./ -name "*.h")
+OBJS = $(SRCS:%.c=%.o)
+TARGET = compiler
+
+$(TARGET):$(OBJS)
+	$(CC) -lfl -ly $(OBJS) -o $(TARGET)
 	make clean
 
-
-ast.o:
-	cd ./ast
-	gcc -c -g ast.c
-
-sematic.o:
-	cd sematic
-	gcc -c -g sematic.cd
-
-st.o:
-	cd sematic
-	gcc -c -g st.c
-
-syntax.tab.c :
-	flex lexical.l
-	bison -d syntax.y
-
-
-syn.tab.o: syntax.tab.c 
-	gcc -c -g syntax.tab.c 
-main.o: 	
-	gcc -c -g main.c
-
+%.o: %.c $(HEADS)	
+	$(CC) -c -g $< -o $@
+	
 clean:
 	find . -name "*.o"  | xargs rm -f

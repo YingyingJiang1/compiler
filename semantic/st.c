@@ -141,6 +141,7 @@ Symbol *genVarSym(Node *idNode, Type type)
     return varSym;
 }
 
+/*
 int calStructSize(Symbol* sym)
 {
     int size = 0;
@@ -150,11 +151,12 @@ int calStructSize(Symbol* sym)
         Type type;
         type.type = members[i]->var.type;
         type.symAddr = members[i]->var.structInfo;
-        size += calVarSize(&type, members[i]);
+        size += calSize(members[i]);
     }
     return size;
 
 }
+*/
 
 int calSize(Symbol* varSym)
 {
@@ -187,7 +189,7 @@ void fillInStructSymbol(Node *structNode, Symbol* structSym)
     if(structNode->num > 1)
         defList = structNode->children[1];
     else
-        return structSym;
+        return;
 
     // apply for space for members
     for(int i = 0; i < defList->num; ++i)

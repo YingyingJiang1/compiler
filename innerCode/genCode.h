@@ -1,5 +1,6 @@
 #ifndef GEN_CODE_H
 #define GEN_CODE_H
+
 #include "../ast/ast.h"
 #include "../innerCode/innerCode.h"
 
@@ -7,15 +8,22 @@ extern int varNO;
 extern int tmpNO;
 extern int labelNO;
 extern InnerCode* codes[];
-
-// calculate size of struct
-int calVarSize(Type* type, Symbol* varSym);
+extern int codeNum;
 
 // generate code: DEX x [size](apply for space)
 void genDEC(Symbol* sym, int size);
 
+// generate code: LABEL label, return Operand 'label'
+Operand* genLABEL();
+
 // generate code: RETURN x
 void genRETURN(Operand* op1);
+
+// generate code
+InnerCode* genCode(int kind, int argc, ...);
+
+// generate operand
+Operand* genOp(int kind, void* val);
 
 // generate code for expressions
 Operand* translateExp(Node* exp);
@@ -26,8 +34,6 @@ void translateBoolExp(Node* exp, CodeList* tlistHead, CodeList* flistHead);
 // set
 void backpatch(CodeList list, Operand* label);
 
-// set label of goto statement to 'label' and return index of this GOTO statement
-int genGOTO(Operand* label);
 
 // set the label of all jump statements in the 'list' to 'label'
 void genASSIGN(Operand* result, Operand* op1);
