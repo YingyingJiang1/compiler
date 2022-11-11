@@ -46,6 +46,8 @@ char* getPrefix(Operand* op)
         return "&v";
     if(op->kind == GET_VALUE)
         return "*t";
+    if(op->kind == GET_VALUE_V)
+        return "*v";
 }
 
 // didn't consider float type

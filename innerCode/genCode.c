@@ -16,7 +16,8 @@
 
 #define pop() arr[top--]
 
-#define replaceOpKind(op) if(op->kind == ADDRESS) op = genOp(GET_VALUE, &(op->no))
+#define replaceOpKind(op) if(op->kind == ADDRESS) op = genOp(GET_VALUE, &(op->no)); \
+else if(op->kind == ADDRESS_V) op = genOp(GET_VALUE_V, &(op->no))
 
 // all functions in this file are for generating codes
 
@@ -184,6 +185,36 @@ int getOffset(Symbol **sym, char *name)
     }
 }
 
+// get base address of symbol 'sym', only meaningful for struct and array variable
+Operand* getBaseAddr(Symbol* sym)
+{
+    Operand* op = sym->var.op;
+    if(op)
+    {
+        if(op->kind == VARIABLE)
+        {
+            Operand* op1 = genOp(GET_ADDRESS, &(op->no));
+            Operand* result = genOp(ADDRESS, &(tmpNO));
+            ++tmpNO;
+            genCode(ASSIGN, 2, op1, result);
+            sym->var.op = result;
+            return result;
+        }
+        else
+            return op;
+    }
+    else
+    {
+        Operand* op1 = genOp(GET_ADDRESS, &(varNO));
+        Operand* result = genOp(ADDRESS, &(tmpNO));
+        ++tmpNO;
+        ++varNO;
+        genCode(ASSIGN, 2, op1, result);
+        sym->var.op = result;
+        return result;
+    }  
+}
+
 Operand *getMemAddr(Node *pNode)
 {
     Node *arr[100];
@@ -196,33 +227,8 @@ Operand *getMemAddr(Node *pNode)
     }
     Node *cur = pop();
     // pointer of a variable symbol
-    Symbol *sym = findSymbol(cur->children[0]->val);
-    Operand *base;
-    Operand* op = sym->var.op;
-    if(op)
-    {
-        if(op->kind == VARIABLE)
-        {
-            Operand* op1 = genOp(GET_ADDRESS, &(op->no));
-            Operand* result = genOp(ADDRESS, &(tmpNO));
-            ++tmpNO;
-            genCode(ASSIGN, 2, op1, result);
-            sym->var.op = result;
-            base = result;
-        }
-        else
-            base = op;
-    }
-    else
-    {
-        Operand* op1 = genOp(GET_ADDRESS, &(varNO));
-        Operand* result = genOp(ADDRESS, &(tmpNO));
-        ++tmpNO;
-        ++varNO;
-        genCode(ASSIGN, 2, op1, result);
-        sym->var.op = result;
-        base = result;
-    }  
+    Symbol *sym = findSymbol(cur->children[0]->val);    
+    Operand *base = getBaseAddr(sym);
 
     sym = sym->var.structInfo;
     int off = getOffset(&sym, cur->children[1]->val);
@@ -396,6 +402,8 @@ Operand *translateExp(Node *exp)
             op1 = translateExp(exp->children[0]);
             op2 = translateExp(exp->children[1]);
         }        
+        printf("404:kind:%d, no:%d\n", op1->kind, op1->no);
+        printf("405:kind:%d, no:%d\n", op2->kind, op2->no);
         replaceOpKind(op1);
         replaceOpKind(op2);        
         result = genOp(TMP_VARIABLE, &tmpNO);
@@ -412,31 +420,7 @@ Operand *translateExp(Node *exp)
     {
         Symbol* sym = findSymbol(exp->children[0]->val);
         Operand* op = sym->var.op;
-        Operand* base;
-        if(op)
-        {
-            if(op->kind == VARIABLE)
-            {
-                Operand* op1 = genOp(GET_ADDRESS, &(op->no));
-                Operand* result = genOp(ADDRESS, &(tmpNO));
-                ++tmpNO;
-                genCode(ASSIGN, 2, op1, result);
-                sym->var.op = result;
-                base = result;
-            }
-            else
-                base = op;
-        }
-        else
-        {
-            Operand* op1 = genOp(GET_ADDRESS, &(varNO));
-            Operand* result = genOp(ADDRESS, &(tmpNO));
-            ++tmpNO;
-            ++varNO;
-            genCode(ASSIGN, 2, op1, result);
-            sym->var.op = result;
-            base = result;
-        }  
+        Operand* base = getBaseAddr(sym);        
 
         // get offset
         Operand *op1, *op2, *result;
@@ -444,16 +428,26 @@ Operand *translateExp(Node *exp)
         int width;
         for (int i = 2; i < exp->num - 1; ++i)
         {
+            if(op1->kind == CONST_INT && op1->constInt == 0)
+                goto L;
             op2 = genOp(CONST_INT, &(sym->var.eachDimSize[i-1]));
             result = genTmpVarOp();
             genCode(MUL, 3, op1, op2, result);
 
             op1 = result;
+            L:
             op2 = translateExp(exp->children[i]);
+            if(op2->kind == CONST_INT && op2->constInt == 0)
+                continue;
             result = genTmpVarOp();
             genCode(PLUS, 3, op1, op2, result);
         }
         op1 = result;
+        if(op1->kind == CONST_INT && op1->constInt == 0)
+        {
+            return base;
+
+        }
         if (sym->var.type == STRUCT)
             width = sym->var.structInfo->structure.size;
         else
