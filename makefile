@@ -2,7 +2,7 @@ CC = gcc
 SRCS = $(shell find ./ -name "*.c" | sed "s/.\/lex.yy.c//g") 
 HEADS = $(shell find ./ -name "*.h")
 OBJS = $(SRCS:%.c=%.o)
-TARGET = compiler
+TARGET = parser
 
 $(TARGET):$(OBJS)
 	$(CC) -lfl -ly $(OBJS) -o $(TARGET)

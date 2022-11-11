@@ -1,40 +1,98 @@
-FUNCTION add :
+FUNCTION func1 :
 PARAM v1
-t1 := #1 * #4
-t2 := v1 + t1
-t3 := *v1 + *t2
-RETURN t3
-FUNCTION main :
-DEC v2 8
-DEC v3 8
+v2 := #0
+v3 := #2
 v4 := #0
-v5 := #0
 LABEL L1 :
-IF v4 < #2 GOTO L2
-GOTO L6
-LABEL L2 :
-LABEL L3 :
-IF v5 < #2 GOTO L4
+IF v2 < v3 GOTO L2
 GOTO L5
+LABEL L2 :
+t1 := v2 * #4
+t2 := v1 + t1
+IF *t2 > v4 GOTO L3
+GOTO L4
+LABEL L3 :
+t3 := v2 * #4
+t4 := v1 + t3
+v4 := *t4
 LABEL L4 :
-t4 := &v2
-t5 := v5 * #4
-t6 := t4 + t5
-t7 := v4 + v5
-*t6 := t7
-t8 := v5 + #1
-v5 := t8
-GOTO L3
-LABEL L5 :
-t9 := &v3
-ARG t4
-t10 := CALL add
-*t9 := t10
-t11 := *t9
-WRITE t11
-t11 := v4 + #1
-v4 := t11
-v5 := #0
+t5 := v2 + #1
+v2 := t5
 GOTO L1
+LABEL L5 :
+RETURN v4
+FUNCTION func2 :
+PARAM v5
+PARAM v6
+t6 := v5 / v6
+v7 := t6
+t7 := v7 * v6
+v8 := t7
+t8 := v5 - v8
+v9 := t8
+RETURN v9
+FUNCTION main :
+v10 := #2
+DEC v11 16
+DEC v12 8
+v13 := #0
+v14 := #0
 LABEL L6 :
+IF v13 < v10 GOTO L7
+GOTO L11
+LABEL L7 :
+v14 := #0
+LABEL L8 :
+IF v14 < v10 GOTO L9
+GOTO L10
+LABEL L9 :
+t9 := &v11
+t10 := v13 * #2
+t11 := t10 + v14
+t12 := t11 * #4
+t13 := t9 + t12
+ARG v10
+t14 := v13 + v14
+ARG t14
+t15 := CALL func2
+*t13 := t15
+t16 := v14 + #1
+v14 := t16
+GOTO L8
+LABEL L10 :
+t17 := &v12
+t18 := v13 * #4
+t19 := t17 + t18
+t20 := v13 * #4
+t21 := t9 + t20
+ARG t21
+t22 := CALL func1
+*t19 := t22
+t23 := v13 + #1
+v13 := t23
+GOTO L6
+LABEL L11 :
+t24 := *t9
+WRITE t24
+t24 := #1 * #4
+t25 := t9 + t24
+t26 := *t25
+WRITE t26
+t26 := #1 * #2
+t27 := t26 * #4
+t28 := t9 + t27
+t29 := *t28
+WRITE t29
+t29 := #1 * #2
+t30 := t29 + #1
+t31 := t30 * #4
+t32 := t9 + t31
+t33 := *t32
+WRITE t33
+t33 := *t17
+WRITE t33
+t33 := #1 * #4
+t34 := t17 + t33
+t35 := *t34
+WRITE t35
 RETURN #0

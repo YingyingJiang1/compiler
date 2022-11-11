@@ -109,7 +109,6 @@ void outCJMP(InnerCode* code)
 
 void outputCode(char* outfile)
 {
-    printf("106\n");
     memset(buffer, 0, BUF_SIZE);
     FILE* out = fopen(outfile, "w");
     for(int i = 0; i < codeNum; ++i)
@@ -185,7 +184,6 @@ void outputCode(char* outfile)
             length = 0;
         }
     }
-    printf("%s", buffer);
     buffer[length++] = 0;
     fputs(buffer, out);
     fclose(out);

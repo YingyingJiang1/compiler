@@ -16,8 +16,10 @@
 
 #define pop() arr[top--]
 
-#define replaceOpKind(op) if(op->kind == ADDRESS) op = genOp(GET_VALUE, &(op->no)); \
+#define expTypeCheck(op) if(op->kind == ADDRESS) op = genOp(GET_VALUE, &(op->no)); \
 else if(op->kind == ADDRESS_V) op = genOp(GET_VALUE_V, &(op->no))
+
+
 
 // all functions in this file are for generating codes
 
@@ -247,7 +249,7 @@ Operand *getMemAddr(Node *pNode)
 Operand* handleWrite(Node* exp)
 {
     Operand *op1 = translateExp(exp->children[0]->children[0]); 
-    if(op1->kind != VARIABLE)
+    if(op1->kind == ADDRESS || op1->kind == ADDRESS_V)
     {
         Operand* tmp = op1;
         op1 = genOp(TMP_VARIABLE, &tmpNO);
@@ -304,6 +306,8 @@ void translateBoolExp(Node *exp, CodeList *tlist, CodeList *flist)
         Operand *op1 = translateExp(exp->children[0]);
         Operand *op2 = translateExp(exp->children[1]);
         int kind = getCJMPkind(exp->val);
+        expTypeCheck(op1);
+        expTypeCheck(op2);
         add2list(tlist, genCode(kind, 3, op1, op2, NULL));
         add2list(flist, genCode(JMP, 1, NULL));
         return;
@@ -322,6 +326,7 @@ void translateBoolExp(Node *exp, CodeList *tlist, CodeList *flist)
         Symbol *sym = findSymbol(exp->val);
         Operand *op1 = genVarOp(sym);
         Operand *op2 = genOp(CONST_INT, &val);
+        expTypeCheck(op1);
         add2list(tlist, genCode(JNE, 3, op1, op2, NULL));
         add2list(flist, genCode(JMP, 1, NULL));
         return;
@@ -402,10 +407,9 @@ Operand *translateExp(Node *exp)
             op1 = translateExp(exp->children[0]);
             op2 = translateExp(exp->children[1]);
         }        
-        printf("404:kind:%d, no:%d\n", op1->kind, op1->no);
-        printf("405:kind:%d, no:%d\n", op2->kind, op2->no);
-        replaceOpKind(op1);
-        replaceOpKind(op2);        
+        
+        expTypeCheck(op1);
+        expTypeCheck(op2);        
         result = genOp(TMP_VARIABLE, &tmpNO);
         ++tmpNO;
         genCode(kind, 3, op1, op2, result);
@@ -422,28 +426,42 @@ Operand *translateExp(Node *exp)
         Operand* op = sym->var.op;
         Operand* base = getBaseAddr(sym);        
 
-        // get offset
+        // get the number of elements
         Operand *op1, *op2, *result;
         result = op1 = translateExp(exp->children[1]);
         int width;
-        for (int i = 2; i < exp->num - 1; ++i)
+        for (int i = 2; i < exp->num; ++i)
         {
-            if(op1->kind == CONST_INT && op1->constInt == 0)
+            /*
+            for a Operand type varible 'op', union domain of op is 0 if and only if op.kind = CONST_INT and op.constInt = 0.
+            there is no need to execute multiple operation when following condition meets.
+            */
+            if(op1->constInt == 0)
                 goto L;
+
             op2 = genOp(CONST_INT, &(sym->var.eachDimSize[i-1]));
             result = genTmpVarOp();
             genCode(MUL, 3, op1, op2, result);
 
-            op1 = result;
-            L:
+            op1 = result;    
+            L:       
             op2 = translateExp(exp->children[i]);
-            if(op2->kind == CONST_INT && op2->constInt == 0)
+            expTypeCheck(op2);
+            // there is need to execute plus operation when following condition meets
+            if(op1->constInt == 0 && op2->constInt == 0)
+                continue;
+            if(op1->constInt == 0)
+            {
+                op1 = op2;
+                continue;
+            }            
+            if(op2->constInt == 0)
                 continue;
             result = genTmpVarOp();
             genCode(PLUS, 3, op1, op2, result);
+            op1 = result;
         }
-        op1 = result;
-        if(op1->kind == CONST_INT && op1->constInt == 0)
+        if(op1->constInt == 0)
         {
             return base;
 
@@ -503,7 +521,7 @@ Operand *translateExp(Node *exp)
         Node *argList = exp->children[0];
         Symbol* sym = findSymbol(exp->children[0]->val);
         Symbol** paras = sym->func.paras;
-        for (int i = 0; i < argList->num; ++i)
+        for (int i = argList->num-1; i >= 0; --i)
         {
             Operand *op = translateExp(argList->children[i]);
             /*
@@ -512,12 +530,15 @@ Operand *translateExp(Node *exp)
             */
             if(paras[i]->var.dimension > 0 || paras[i]->var.type == STRUCT)
             {
-                if(op->kind != ADDRESS)
+                if(op->kind != ADDRESS && op->kind != ADDRESS_V)
                     op = genOp(GET_ADDRESS, &(op->no));                
             }
-            else if(op->kind == ADDRESS)
+            else 
             {
-                op = genOp(GET_VALUE, &(op->no));
+                if(op->kind == ADDRESS)
+                    op = genOp(GET_VALUE, &(op->no));
+                else if(op->kind == ADDRESS_V)
+                    op = genOp(GET_VALUE_V, &(op->no));
             }
             genCode(ARG, 1, op);
         }
@@ -531,8 +552,8 @@ Operand *translateExp(Node *exp)
     {
         Operand *result = translateExp(exp->children[0]);
         Operand *op1 = translateExp(exp->children[1]);
-        replaceOpKind(op1);
-        replaceOpKind(result);
+        expTypeCheck(op1);
+        expTypeCheck(result);
         genCode(ASSIGN, 2, op1, result);
         return result;
     }
