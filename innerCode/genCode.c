@@ -10,10 +10,13 @@
     genCode(READ, 1, op1);        \
     return op1
 
-#define handleWrite(exp)                                        \
-    Operand *op1 = translateExp(exp->children[0]->children[0]); \
-    genCode(WRITE, 1, op1);                                     \
-    return op1
+                                       
+    
+#define push(pNode) arr[++top] = pNode
+
+#define pop() arr[top--]
+
+#define replaceOpKind(op) if(op->kind == ADDRESS) op = genOp(GET_VALUE, &(op->no))
 
 // all functions in this file are for generating codes
 
@@ -64,16 +67,12 @@ Operand *genVarOp(Symbol *sym)
 {
     if (sym)
     {
+
         if (sym->var.op)
             return sym->var.op;
         else
         {
-            Operand *ret;
-            // variable is a struct or an array, then get address of it
-            if (sym->var.dimension > 0 || sym->var.type == STRUCT)
-                ret = genOp(GET_ADDRESS, &varNO);
-            else
-                ret = genOp(VARIABLE, &varNO);
+            Operand *ret = genOp(VARIABLE, &varNO);                 
             ++varNO;
             sym->var.op = ret;
             return ret;
@@ -121,8 +120,8 @@ InnerCode *genCode(int kind, int argc, ...)
 void genDEC(Symbol *sym, int size)
 {
     Operand *op1 = genOp(VARIABLE, &varNO);
-    Operand *op2 = genOp(CONST_INT, &size);
-    genCode(DEC, 2, op1, op2);
+    Operand *result = genOp(CONST_INT, &size);
+    genCode(DEC, 2, op1, result);
     ++varNO;
     sym->var.op = op1;
 }
@@ -164,20 +163,11 @@ Operand *genTmpVarOp()
     return op;
 }
 
-inline void push(Node **stack, Node *pNode, int *top)
-{
-    *top += 1;
-    stack[*top] = pNode;
-}
-
-inline Node *pop(Node **stack, int *top)
-{
-    *top -= 1;
-    return stack[*top + 1];
-}
-
-// !!!!!!! i don't know how to clearly state the function of this function
-// get offset of struct member and set value of 'sym' to a struct
+// get offset of struct member and set value of 'sym' to the member
+/*
+param:  sym -> a pointer of pointer of struct symbol
+        name -> name of target struct member
+*/
 int getOffset(Symbol **sym, char *name)
 {
     int off = 0;
@@ -190,7 +180,7 @@ int getOffset(Symbol **sym, char *name)
             *sym = members[i]->var.structInfo;
             return off;
         }
-        off += calSize(*sym);
+        off += calSize(members[i]);
     }
 }
 
@@ -198,28 +188,70 @@ Operand *getMemAddr(Node *pNode)
 {
     Node *arr[100];
     int top = -1;
-    push(arr, pNode, &top);
+    push(pNode);
     while (pNode->children[0]->type == MEMBER_ACCESS_OP)
     {
         pNode = pNode->children[0];
-        push(arr, pNode, &top);
+        push(pNode);
     }
-
-    Node *cur = pop(arr, &top);
+    Node *cur = pop();
+    // pointer of a variable symbol
     Symbol *sym = findSymbol(cur->children[0]->val);
-    Operand *base = genVarOp(sym);
+    Operand *base;
+    Operand* op = sym->var.op;
+    if(op)
+    {
+        if(op->kind == VARIABLE)
+        {
+            Operand* op1 = genOp(GET_ADDRESS, &(op->no));
+            Operand* result = genOp(ADDRESS, &(tmpNO));
+            ++tmpNO;
+            genCode(ASSIGN, 2, op1, result);
+            sym->var.op = result;
+            base = result;
+        }
+        else
+            base = op;
+    }
+    else
+    {
+        Operand* op1 = genOp(GET_ADDRESS, &(varNO));
+        Operand* result = genOp(ADDRESS, &(tmpNO));
+        ++tmpNO;
+        ++varNO;
+        genCode(ASSIGN, 2, op1, result);
+        sym->var.op = result;
+        base = result;
+    }  
+
+    sym = sym->var.structInfo;
     int off = getOffset(&sym, cur->children[1]->val);
     while (top != -1)
     {
-        cur = pop(arr, &top);
+        cur = pop();
         off += getOffset(&sym, cur->children[1]->val);
     }
 
     Operand *result = genOp(ADDRESS, &tmpNO);
     ++tmpNO;
-    genCode(ASSIGN, 3, base, genOp(CONST_INT, &off), result);
+    genCode(PLUS, 3, base, genOp(CONST_INT, &off), result);
     return result;
 }
+
+Operand* handleWrite(Node* exp)
+{
+    Operand *op1 = translateExp(exp->children[0]->children[0]); 
+    if(op1->kind != VARIABLE)
+    {
+        Operand* tmp = op1;
+        op1 = genOp(TMP_VARIABLE, &tmpNO);
+        genCode(ASSIGN, 2, genOp(GET_VALUE, &(tmp->no)), op1);
+    }
+    genCode(WRITE, 1, op1);
+    int zero = 0;           
+    return genOp(CONST_INT, &zero);
+
+} 
 
 Operand *genLABEL()
 {
@@ -258,9 +290,6 @@ void backpatch(CodeList list, Operand *label)
         head = head->next;
     }
 }
-
-
-
 
 void translateBoolExp(Node *exp, CodeList *tlist, CodeList *flist)
 {
@@ -366,8 +395,9 @@ Operand *translateExp(Node *exp)
         {
             op1 = translateExp(exp->children[0]);
             op2 = translateExp(exp->children[1]);
-        }
-
+        }        
+        replaceOpKind(op1);
+        replaceOpKind(op2);        
         result = genOp(TMP_VARIABLE, &tmpNO);
         ++tmpNO;
         genCode(kind, 3, op1, op2, result);
@@ -380,9 +410,33 @@ Operand *translateExp(Node *exp)
     */
     case ARRAY_REFERENCE:
     {
-        Symbol *sym = findSymbol(exp->children[0]->val);
-        // base address of array
-        Operand *base = genVarOp(sym);
+        Symbol* sym = findSymbol(exp->children[0]->val);
+        Operand* op = sym->var.op;
+        Operand* base;
+        if(op)
+        {
+            if(op->kind == VARIABLE)
+            {
+                Operand* op1 = genOp(GET_ADDRESS, &(op->no));
+                Operand* result = genOp(ADDRESS, &(tmpNO));
+                ++tmpNO;
+                genCode(ASSIGN, 2, op1, result);
+                sym->var.op = result;
+                base = result;
+            }
+            else
+                base = op;
+        }
+        else
+        {
+            Operand* op1 = genOp(GET_ADDRESS, &(varNO));
+            Operand* result = genOp(ADDRESS, &(tmpNO));
+            ++tmpNO;
+            ++varNO;
+            genCode(ASSIGN, 2, op1, result);
+            sym->var.op = result;
+            base = result;
+        }  
 
         // get offset
         Operand *op1, *op2, *result;
@@ -390,7 +444,7 @@ Operand *translateExp(Node *exp)
         int width;
         for (int i = 2; i < exp->num - 1; ++i)
         {
-            op2 = genOp(CONST_INT, &(sym->var.eachDimSize[i + 1]));
+            op2 = genOp(CONST_INT, &(sym->var.eachDimSize[i-1]));
             result = genTmpVarOp();
             genCode(MUL, 3, op1, op2, result);
 
@@ -414,7 +468,6 @@ Operand *translateExp(Node *exp)
         result = genOp(ADDRESS, &tmpNO);
         ++tmpNO;
         genCode(PLUS, 3, op1, op2, result);
-
         return result;
     }
 
@@ -451,12 +504,27 @@ Operand *translateExp(Node *exp)
 
         if (strcmp(exp->children[0]->val, "write") == 0)
         {
-            handleWrite(exp);
+            return handleWrite(exp);
         }
         Node *argList = exp->children[0];
+        Symbol* sym = findSymbol(exp->children[0]->val);
+        Symbol** paras = sym->func.paras;
         for (int i = 0; i < argList->num; ++i)
         {
             Operand *op = translateExp(argList->children[i]);
+            /*
+            if parameter is array or struct, then argument should be passed by address
+            else passing argument by value
+            */
+            if(paras[i]->var.dimension > 0 || paras[i]->var.type == STRUCT)
+            {
+                if(op->kind != ADDRESS)
+                    op = genOp(GET_ADDRESS, &(op->no));                
+            }
+            else if(op->kind == ADDRESS)
+            {
+                op = genOp(GET_VALUE, &(op->no));
+            }
             genCode(ARG, 1, op);
         }
         Operand *op1 = genOp(NAME, exp->children[0]->val);
@@ -469,6 +537,8 @@ Operand *translateExp(Node *exp)
     {
         Operand *result = translateExp(exp->children[0]);
         Operand *op1 = translateExp(exp->children[1]);
+        replaceOpKind(op1);
+        replaceOpKind(result);
         genCode(ASSIGN, 2, op1, result);
         return result;
     }

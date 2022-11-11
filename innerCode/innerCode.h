@@ -6,7 +6,7 @@ typedef struct Operand
 {
     // ADDRESS use 'addr', dedicates address is stored in 'addr'
     // GET_ADDRESS use 'no', dedicates get address of variable. e.g: no = 1 then in 3 address code is &v1
-    enum {VARIABLE, TMP_VARIABLE, CONST_INT, CONST_FLOAT, LABEL_NO, NAME, ADDRESS, GET_ADDRESS} kind;
+    enum {VARIABLE, TMP_VARIABLE, CONST_INT, CONST_FLOAT, LABEL_NO, NAME, ADDRESS, ADDRESS_V, GET_ADDRESS, GET_VALUE} kind;
     union 
     {
         char* name;     // remember to free when free struct Operand

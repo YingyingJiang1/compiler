@@ -413,8 +413,14 @@ void checkCompSt(Node *pNode, Type retType)
                 if(!errorOccurred)
                 {
                     // generate code: PARAM x
-                    Operand* op1 = genVarOp(sym);
+                    Operand* op1;
+                    if(sym->var.type == STRUCT || sym->var.dimension > 0)
+                        op1 = genOp(ADDRESS_V, &varNO);
+                    else
+                        op1 = genOp(VARIABLE, &varNO);
+                    ++varNO;
                     genCode(PARAM, 1, op1);
+                    sym->var.op = op1;
                 }
                 
             }

@@ -1,0 +1,18 @@
+FUNCTION add :
+PARAM v1
+t1 := v1 + #0
+t2 := v1 + #4
+t3 := *t1 + *t2
+RETURN t3
+FUNCTION main :
+DEC v2 8
+t4 := &v2
+t5 := t4 + #0
+*t5 := #1
+t6 := t4 + #4
+*t6 := #2
+ARG t4
+t7 := CALL add
+v3 := t7
+WRITE v3
+RETURN #0
