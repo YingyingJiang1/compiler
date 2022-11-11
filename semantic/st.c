@@ -146,7 +146,7 @@ int calStructSize(Symbol* sym)
 {
     int size = 0;
     Symbol** members = sym->structure.members;
-    for(int i = 0; i < sym->structure.memNums; ++i)
+    for(int i = 0; i < sym->structure.memsNum; ++i)
     {
         Type type;
         type.type = members[i]->var.type;
@@ -161,21 +161,28 @@ int calStructSize(Symbol* sym)
 int calSize(Symbol* varSym)
 {
     int size = 0, unit, num = 1;
-    if(varSym->var.type == STRUCT)
+    int type = varSym->var.type;
+    if(type == STRUCT_ARRAY || type == STRUCT)
+    {
         unit = varSym->var.structInfo->structure.size;
+        if(type == STRUCT)
+            goto L;
+    }
     else
         unit = 4;
     
+
     for(int i = 0; i < varSym->var.dimension; ++i)
     {
         num *= varSym->var.eachDimSize[i];
     }
+    L:
     size = unit * num;
     return size;
 }
 
 /*
-fill in domains of the struct symbol 'structSym'
+fill in domains(memsNum and members) of the struct symbol 'structSym'
 para: structNode-> STRUCT_TYPE node, structSym: points to a symbol to be filled in
 */
 
@@ -194,7 +201,7 @@ void fillInStructSymbol(Node *structNode, Symbol* structSym)
     // apply for space for members
     for(int i = 0; i < defList->num; ++i)
         memsNum += defList->children[i]->num-1;
-    structSym->structure.memNums = memsNum;
+    structSym->structure.memsNum = memsNum;
 
     structSym->structure.members = (Symbol **)malloc(sizeof(Symbol *) * memsNum);
     memset(structSym->structure.members, 0, sizeof(Symbol*)*memsNum);
@@ -207,6 +214,7 @@ void fillInStructSymbol(Node *structNode, Symbol* structSym)
         Type type;
         getType(def->children[0], &type);
         
+        // additional treatment for STRUCT_TYPE member
         if(def->children[0]->type == STRUCT_TYPE)
         {
             // use struct name to define member variable 
@@ -242,6 +250,7 @@ void fillInStructSymbol(Node *structNode, Symbol* structSym)
                 }                    
             }
         }
+
         else
         {            
             // handle all member vairables
@@ -258,9 +267,11 @@ void fillInStructSymbol(Node *structNode, Symbol* structSym)
                     if(nameExisted(structSym->structure.members, idNode->val))
                         printf("Error type %d at Line %d: struct domain name duplicated.\n",
                             STRUCT_MEMBER_DEFINED_INVALID, idNode->lineNo);
+                    
+                    // generate struct member and calculate size of struct
                     else
                     {
-                        Symbol* sym = genVarSym(idNode,type);  
+                        Symbol* sym = genVarSym(idNode,type);                          
                         structSym->structure.members[count++] = sym;
                         structSym->structure.size += calSize(sym);  
 
@@ -288,13 +299,14 @@ Symbol* addVar(SymbolTable st, int tSize, Node* idNode, Type type)
     //printf("size:%d, index: %d, name:%s\n", tSize, index, varSym->name);
 
 }
+
+
 /* add struct into symbol table st
 st->symbol table, tSize->size of st, structNode->STRUCT_TYPE node
 */
 Symbol* addStruct(SymbolTable st, int tSize, Node* structNode)
 {    
-    // First add the structure to the symbol table and then assign values to each field of the structure symbol, 
-    //so that effectively handling the nested definition of structs with the same name
+    // generate a new symbol and initial part of its domain
     Symbol* structSym ;
     int index;
     char* structName = structNode->children[0]->val;
@@ -304,6 +316,8 @@ Symbol* addStruct(SymbolTable st, int tSize, Node* structNode)
     structSym->lineno = structNode->children[0]->lineNo;
     structSym->symType = UNFINISHED_STRUCTURE;
     
+    /* First add the structure to the symbol table and then assign values to each field of the structure symbol, 
+    so that effectively handling the nested definition of structs with the same name*/
     index = hash_pjw(structSym->name, tSize);
     structSym->next = st[index];
     st[index] = structSym;
@@ -393,7 +407,7 @@ void freeSymbol(Symbol *sym)
         {
             if (sym->structure.members)
             {
-                for(int i = 0; i < sym->structure.memNums; ++i)
+                for(int i = 0; i < sym->structure.memsNum; ++i)
                     freeSymbol(sym->structure.members[i]);
                 free(sym->structure.members);
             }
@@ -427,9 +441,9 @@ void deleteST(SymbolTable st, int tSize)
 
 Type findStructMem(Symbol *structSym, char* name)
 {
-    //printf("389: name:%s, num:%d, memberName:%s\n", structSym->name, structSym->structure.memNums, name);
+    //printf("389: name:%s, num:%d, memberName:%s\n", structSym->name, structSym->structure.memsNum, name);
     Type type;
-    for (int i = 0; i < structSym->structure.memNums; ++i)
+    for (int i = 0; i < structSym->structure.memsNum; ++i)
     {
         Symbol* member = structSym->structure.members[i];
         if (member && strcmp(member->name, name) == 0)

@@ -74,7 +74,7 @@ typedef struct Symbol
         // struct info
         struct
         {
-            int memNums;
+            int memsNum;
             int size;
             struct Symbol**members; // store struct members in symbol table(this table has a struct scope)
         }structure;

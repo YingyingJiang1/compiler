@@ -463,9 +463,9 @@ int isStructEqual(Symbol *s1, Symbol *s2)
 {
     if (s1 == s2)
         return 1;
-    if (s1->structure.memNums != s2->structure.memNums)
+    if (s1->structure.memsNum != s2->structure.memsNum)
         return 0;
-    for (int i = 0; i < s1->structure.memNums; ++i)
+    for (int i = 0; i < s1->structure.memsNum; ++i)
     {
         Symbol *mem1 = s1->structure.members[i];
         Symbol *mem2 = s2->structure.members[i];

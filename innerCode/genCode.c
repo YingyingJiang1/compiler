@@ -174,7 +174,7 @@ param:  sym -> a pointer of pointer of struct symbol
 int getOffset(Symbol **sym, char *name)
 {
     int off = 0;
-    int mems = (*sym)->structure.memNums;
+    int mems = (*sym)->structure.memsNum;
     Symbol **members = (*sym)->structure.members;
     for (int i = 0; i < mems; ++i)
     {
@@ -217,6 +217,11 @@ Operand* getBaseAddr(Symbol* sym)
     }  
 }
 
+/*
+return address of struct member which is going to be visited
+para:
+    pNode: MEMBER_ACCESS_OP
+*/
 Operand *getMemAddr(Node *pNode)
 {
     Node *arr[100];
@@ -228,10 +233,14 @@ Operand *getMemAddr(Node *pNode)
         push(pNode);
     }
     Node *cur = pop();
-    // pointer of a variable symbol
-    Symbol *sym = findSymbol(cur->children[0]->val);    
+    
+    
+    Operand* base = translateExp(cur);
+
+      
     Operand *base = getBaseAddr(sym);
 
+    Symbol *sym = findSymbol(cur->children[0]->val);  
     sym = sym->var.structInfo;
     int off = getOffset(&sym, cur->children[1]->val);
     while (top != -1)
@@ -374,6 +383,7 @@ void translateBoolExp(Node *exp, CodeList *tlist, CodeList *flist)
 
 Operand *translateExp(Node *exp)
 {
+    // base case
     if (exp->type == IDENTIFIER)
     {
         Symbol *sym = findSymbol(exp->val);
