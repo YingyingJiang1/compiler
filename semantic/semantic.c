@@ -301,6 +301,10 @@ void handleVarList(SymbolTable st, int tSize, Node *varDef, Type type)
                 {
                     Operand* result = genVarOp(sym);
                     Operand* op1 = translateExp(varDef->children[i]->children[1], &meaningless);
+                    if(op1->kind == ADDRESS)
+                        op1 = genOp(GET_VALUE, &(op1->no));
+                    else if(op1->kind == ADDRESS_V)
+                        op1 = genOp(GET_VALUE_V, &(op1->no));
                     genCode(ASSIGN, 2, op1, result);
                 }
             }                
