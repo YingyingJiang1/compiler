@@ -29,12 +29,20 @@ int main(int argc, char** argv)
             perror(argv[1]);
             return 1;
         }  
-        strncpy(outfile, argv[2], strlen(argv[2]));         
+        if(strlen(argv[2]) > 31)
+        {
+            printf("Filename of output file is too log.\n");
+            return 0;
+        }
+        strcpy(outfile, argv[2]);         
+    }
+    else
+    {
+        printf("Arguments error: main needs two arguments.\n");
+        return 0;
     }
     yyrestart(f);
-    /*return 1 if input is incorrect and error recovery is impossible
-    return 0 if input is valid*/
-    int ret = yyparse();
+    yyparse();
     if(!isSynError && !isLexError)
     {
         //printAST(root);
