@@ -331,7 +331,7 @@ void translateBoolExp(Node *exp, CodeList *tlist, CodeList *flist)
     }
     if (exp->type == FLOAT_POINT)
     {
-    }
+    }    
 
     if (strcmp(exp->val, "&&") == 0)
     {
@@ -358,6 +358,18 @@ void translateBoolExp(Node *exp, CodeList *tlist, CodeList *flist)
 
         *tlist = mergeList(tlist1, tlist2);
         *flist = flist2;
+    }
+    // exp
+    else
+    {
+        int val = 0;
+        Operand* op1 = translateExp(exp, &meaningless);
+        Operand *op2 = genOp(CONST_INT, &val);
+        expTypeCheck(op1);
+        add2list(tlist, genCode(JNE, 3, op1, op2, NULL));
+        add2list(flist, genCode(JMP, 1, NULL));
+        return;
+
     }
 }
 

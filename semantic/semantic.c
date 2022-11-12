@@ -702,6 +702,13 @@ void checkStmt(Node *stmt, Type retType)
         else    // no error then generate 3 address code
         {          
             Operand* op1 = translateExp(stmt->children[0], &meaningless);
+            
+            // !!!!!!!!!! if return type is not only int, then this processing logic has problem
+            if(op1->kind == ADDRESS)
+                op1 = genOp(GET_VALUE, &(op1->no));
+            else if(op1->kind == ADDRESS_V)
+                op1 = genOp(GET_VALUE_V, &(op1->no));
+
             genCode(RETURN , 1, op1);
         }
         free(retType.symAddr);
