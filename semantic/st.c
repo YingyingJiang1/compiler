@@ -106,7 +106,7 @@ void getType(Node* typeNode, Type* type)
 }
 
 
-/* dType has two  possible value: INT, FLOAT
+/* type.type has two  possible value: INT, FLOAT
  */
 Symbol *genVarSym(Node *idNode, Type type)
 {
@@ -235,7 +235,6 @@ void fillInStructSymbol(Node *structNode, Symbol* structSym)
                 Symbol* sym;
                 Node* idNode = def->children[0]->children[0];
 
-                //printf("193:name:%s\n", idNode->val);
                 sym = lookupST(globalST, G_SIZE, idNode->val);
                 // Nested defines structs with the same name
                 if(sym)
@@ -285,8 +284,8 @@ void fillInStructSymbol(Node *structNode, Symbol* structSym)
 
 
 /* add variable into symbol table st
-paras: st->symbol table, tSize->size of st, idNode->IDENTIFIER node
-        dType->type of variable,  structSym->pointer to struct symbol(only useful for struct type variable)
+paras: st: symbol table, tSize: size of st, idNode: IDENTIFIER node
+        type.type: type of variable,  type.symAddr: pointer to struct symbol(only useful for struct type variable)
 */
 Symbol* addVar(SymbolTable st, int tSize, Node* idNode, Type type)
 {    
@@ -302,7 +301,7 @@ Symbol* addVar(SymbolTable st, int tSize, Node* idNode, Type type)
 
 
 /* add struct into symbol table st
-st->symbol table, tSize->size of st, structNode->STRUCT_TYPE node
+st: symbol table, tSize: size of st, structNode: STRUCT_TYPE node
 */
 Symbol* addStruct(SymbolTable st, int tSize, Node* structNode)
 {    
@@ -421,7 +420,6 @@ void freeSymbol(Symbol *sym)
     }
 }
 
-// delete all symbols in st
 void deleteST(SymbolTable st, int tSize)
 {
     Symbol *cur, *pre;

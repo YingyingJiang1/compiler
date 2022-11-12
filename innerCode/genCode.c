@@ -525,8 +525,8 @@ Operand *translateExp(Node *exp, Symbol **retSym)
     /*
     The first child node of 'exp' may be IDENTIFIER, ARRAY_REFERENCE, FUNC_CALL, MEMBER_ACCESS_OP.
     For each struct member accessed, we need get start address of the struct variable(base address),
-    and then get offset of the struct member relative to the base address. To get offset, we must need the struct symbol, this is
-    passed by parameter of 'translateExp': retSym.
+    and then get offset of the struct member relative to the base address. To get offset, 
+    we must need the struct symbol, this is passed by parameter of 'translateExp': retSym.
     */
     case MEMBER_ACCESS_OP:
     {
