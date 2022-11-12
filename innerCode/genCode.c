@@ -5,6 +5,10 @@
 #include <stdarg.h>
 #include <string.h>
 
+/*
+notes: there would be error if arguments of function call exceeds 100(at line 613).
+*/
+
 #define handleRead()              \
     Operand *op1 = genTmpVarOp(); \
     genCode(READ, 1, op1);        \
@@ -482,7 +486,7 @@ Operand *translateExp(Node *exp, Symbol **retSym)
         }
 
         // get offset relative to base address
-        if (sym->var.type == STRUCT)
+        if (sym->var.type == STRUCT || sym->var.type == STRUCT_ARRAY)
             width = sym->var.structInfo->structure.size;
         else
             width = 4;
@@ -533,17 +537,12 @@ Operand *translateExp(Node *exp, Symbol **retSym)
             base = translateExp(exp->children[0], &sym);
 
         // set value of 'retSym'
-        if (type == MEMBER_ACCESS_OP)
+        if (type == MEMBER_ACCESS_OP || type == ARRAY_REFERENCE)
         {
             Type ret = findStructMem(sym->var.structInfo, exp->children[1]->val);
             *retSym = ret.symAddr;
             goto L_IN_MEM_ACCESS;
-        }
-        else if (type == ARRAY_REFERENCE)
-        {
-            *retSym = sym;
-            goto L_IN_MEM_ACCESS;
-        }
+        }        
         else if (type == FUNC_CALL)
         {
             Type type;
@@ -606,6 +605,8 @@ Operand *translateExp(Node *exp, Symbol **retSym)
         Node *argList = exp->children[0];
         Symbol *sym = findSymbol(exp->children[0]->val);
         Symbol **paras = sym->func.paras;
+        Operand* args[100];
+        int j = 0;
         for (int i = argList->num - 1; i >= 0; --i)
         {
             Operand *op = translateExp(argList->children[i], &meaningless);
@@ -625,7 +626,11 @@ Operand *translateExp(Node *exp, Symbol **retSym)
                 else if (op->kind == ADDRESS_V)
                     op = genOp(GET_VALUE_V, &(op->no));
             }
-            genCode(ARG, 1, op);
+            args[j++] = op;            
+        }
+        for(int i = 0; i < j; ++i)
+        {
+            genCode(ARG, 1, args[i]);
         }
         Operand *op1 = genOp(NAME, exp->children[0]->val);
         Operand *result = genTmpVarOp();
