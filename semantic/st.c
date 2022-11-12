@@ -439,6 +439,8 @@ void deleteST(SymbolTable st, int tSize)
         free(st);
 }
 
+/* look for struct member named 'name; in symbol pointed by 'structSym', if found return a Type type.
+ domain of Type 'symAddr' stores address of the struct member */
 Type findStructMem(Symbol *structSym, char* name)
 {
     //printf("389: name:%s, num:%d, memberName:%s\n", structSym->name, structSym->structure.memsNum, name);

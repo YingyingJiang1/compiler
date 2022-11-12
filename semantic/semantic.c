@@ -28,6 +28,12 @@
 
 
 int errorOccurred = 0;
+int nameCount = 0;
+Symbol *globalST[G_SIZE];
+char *funcsName[1000];
+
+extern Symbol* meaningless;
+extern Stack scope;
 
 void getRetType(Node *typeNode, Type *type);
 void checkExp(Node *exp, Type *expRet);
@@ -40,10 +46,8 @@ int isStructEqual(Symbol *s1, Symbol *s2);
 int retValueMatch(Type type1, Type type2);
 int parasTypeConsistent(Symbol *sym, Node *paraList);
 
-Symbol *globalST[G_SIZE];
-extern Stack scope;
-char *funcsName[1000];
-int nameCount = 0;
+
+
 
 // add predefined function "read" and "write"
 void addPDfunc(int flag)
@@ -296,7 +300,7 @@ void handleVarList(SymbolTable st, int tSize, Node *varDef, Type type)
                 if(!errorOccurred)
                 {
                     Operand* result = genVarOp(sym);
-                    Operand* op1 = translateExp(varDef->children[i]->children[1]);
+                    Operand* op1 = translateExp(varDef->children[i]->children[1], &meaningless);
                     genCode(ASSIGN, 2, op1, result);
                 }
             }                
@@ -693,7 +697,7 @@ void checkStmt(Node *stmt, Type retType)
                    RETURN_VALUE_MISMATCH, stmt->lineNo);
         else    // no error then generate 3 address code
         {          
-            Operand* op1 = translateExp(stmt->children[0]);
+            Operand* op1 = translateExp(stmt->children[0], &meaningless);
             genCode(RETURN , 1, op1);
         }
         free(retType.symAddr);
@@ -714,7 +718,7 @@ void checkStmt(Node *stmt, Type retType)
         
         // no error occurred then generate code
         if(!errorOccurred)   
-            translateExp(stmt);
+            translateExp(stmt, &meaningless);
                     
         break;
     }

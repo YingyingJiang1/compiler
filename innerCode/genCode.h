@@ -26,7 +26,7 @@ InnerCode* genCode(int kind, int argc, ...);
 Operand* genOp(int kind, void* val);
 
 // generate code for expressions
-Operand* translateExp(Node* exp);
+Operand* translateExp(Node* exp, Symbol** retSym);
 
 // generate code for bool expressions, using backpatch techniques
 void translateBoolExp(Node* exp, CodeList* tlistHead, CodeList* flistHead);
