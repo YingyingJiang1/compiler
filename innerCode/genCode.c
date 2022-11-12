@@ -300,15 +300,7 @@ void translateBoolExp(Node *exp, CodeList *tlist, CodeList *flist)
         add2list(tlist, genCode(kind, 3, op1, op2, NULL));
         add2list(flist, genCode(JMP, 1, NULL));
         return;
-    }
-    // if logical operator is '!', then exchange truelist and falselist
-    if (exp->val[0] == '!')
-    {
-        CodeList tmp = *tlist;
-        *tlist = *flist;
-        *flist = tmp;
-        return;
-    }
+    }    
     if (exp->type == IDENTIFIER)
     {
         int val = 0;
@@ -333,7 +325,16 @@ void translateBoolExp(Node *exp, CodeList *tlist, CodeList *flist)
     {
     }    
 
-    if (strcmp(exp->val, "&&") == 0)
+    // if logical operator is '!', then exchange truelist and falselist
+    if (exp->val[0] == '!')
+    {
+        CodeList tmp;
+        translateBoolExp(exp->children[0], tlist, flist);
+        tmp = *tlist;
+        *tlist = *flist;
+        *flist = tmp;
+    }
+    else if (strcmp(exp->val, "&&") == 0)
     {
         CodeList tlist1 = NULL, flist1 = NULL;
         CodeList tlist2 = NULL, flist2 = NULL;
