@@ -10,35 +10,35 @@ extern int labelNO;
 extern InnerCode* codes[];
 extern int codeNum;
 
-// generate code: DEX x [size](apply for space)
+// Generates code: DEX x [size](apply for space).
 void genDEC(Symbol* sym, int size);
 
-// generate code: LABEL label, return Operand 'label'
+// Generates code: LABEL label.
 Operand* genLABEL();
 
-// generate code: RETURN x
+// Generates code: RETURN x.
 void genRETURN(Operand* op1);
 
-// generate code
+
 InnerCode* genCode(int kind, int argc, ...);
 
-// generate operand
+// Generates operand.
 Operand* genOp(int kind, void* val);
 
-// generate code for expressions
+// Generates code for expressions.
 Operand* translateExp(Node* exp, Symbol** retSym);
 
-// generate code for bool expressions, using backpatch techniques
+// Generates code for bool expressions, using backpatch techniques.
 void translateBoolExp(Node* exp, CodeList* tlistHead, CodeList* flistHead);
 
-// set
+// set lable of jmp or cjmp code in 'list' to 'label'.
 void backpatch(CodeList list, Operand* label);
 
 
-// set the label of all jump statements in the 'list' to 'label'
+// Generates code: x := y.
 void genASSIGN(Operand* result, Operand* op1);
 
 
-// generate a VARIABLE type operand for 3 address code
+// Generates a operand for variables occurred in src code.
 Operand* genVarOp(Symbol* sym);
 #endif
