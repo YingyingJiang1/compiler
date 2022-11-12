@@ -82,6 +82,7 @@ void addPDfunc(int flag)
     globalST[i] = sym;
 }
 
+
 // root of ast is an EXT_DEF_LIST, its children node is either GLOABAL_VAR_DEF type or FUNC_DEF type.
 void checkProgram(Node *ast)
 {
@@ -171,6 +172,7 @@ void checkProgram(Node *ast)
     }
 }
 
+
 int retValueMatch(Type type1, Type type2)
 {
     if (type1.type != type2.type)
@@ -179,6 +181,7 @@ int retValueMatch(Type type1, Type type2)
         return 0;
     return 1;
 }
+
 
 int parasTypeConsistent(Symbol *sym, Node *paraList)
 {
@@ -205,6 +208,7 @@ int parasTypeConsistent(Symbol *sym, Node *paraList)
     }
     return 1;
 }
+
 
 void defFunc(Node *funcDef)
 {
@@ -241,16 +245,18 @@ void defFunc(Node *funcDef)
         addFunc(retType, cur->children[1], FUNC);
 }
 
+
 /*
-check initialization of variable, if legal initialization then return 1, else return 0
+check initialization of variable.
+@param:
+    assignNode: root of assign expression ast
+    varType: info of the variable being initialized.(varType.symAddr is pointer of the variable)
 */
 int initCheck(Node *assignNode, Type varType)
 {
     Type expType;
     checkExp(assignNode->children[1], &expType);
 
-    // printf("107: varType:type:%d, name:%s, structInfo:%x\n", varType.type,varType.symAddr->name, varType.symAddr->var.structInfo);
-    // printf("108:expType:type:%d, name:%s, structInfo:%x\n", expType.type, expType.symAddr->name, expType.symAddr->var.structInfo);
     if (expType.type != ERROR && !equal(varType, expType))
     {
         errorOccurred = 1;
@@ -262,10 +268,11 @@ int initCheck(Node *assignNode, Type varType)
 }
 
 /*
-check all variables to be defined, if legal then add the variable to st.
-para: varDef-> GLOBAL_VAR_DEF or LOCAL_DEF node, st->symbol table,  tSize->size of st
-        type(type, symAddr) ->  type.type: data type of variable(INT, FLOAT, STRUCT), 
-                                type.symAddr->only useful for struct type variable
+@brief: check all variables to be defined, if legal then add the variable to st.
+@para: 
+    varDef: GLOBAL_VAR_DEF or LOCAL_DEF node, st: symbol table,  tSize: size of st
+    type(type, symAddr):    type.type: data type of variable(INT, FLOAT, STRUCT), 
+                            type.symAddr->only useful for struct type variable
 */
 void handleVarList(SymbolTable st, int tSize, Node *varDef, Type type)
 {
@@ -281,7 +288,6 @@ void handleVarList(SymbolTable st, int tSize, Node *varDef, Type type)
         else
             varNode = varDef->children[i];
 
-        // printf("136:name:%s\n", varNode->val);
         sym = lookupST(st, tSize, varNode->val);
         if (sym)
         {
@@ -318,6 +324,7 @@ void handleVarList(SymbolTable st, int tSize, Node *varDef, Type type)
         }
     }
 }
+
 
 void defVar(SymbolTable st, int tSize, Node *varDef)
 {
@@ -373,7 +380,13 @@ void defVar(SymbolTable st, int tSize, Node *varDef)
     }
 }
 
-// compSt has at most two children: LOCAL_DEF_LIST or STMT_LIST.
+
+/*
+@note:compSt has at most two children: LOCAL_DEF_LIST or STMT_LIST.
+parameter 'retType' is return type of function, 
+if return type is STRUCT or STRUCT_ARRAY then retType.symAddr is pointer of the struct,
+else retType.symAddr is meaningless.
+*/
 void checkCompSt(Node *pNode, Type retType)
 {
     if (pNode == NULL)
@@ -467,6 +480,10 @@ void checkCompSt(Node *pNode, Type retType)
         pop();
 }
 
+
+/*
+@note: Parameters 's1' and 's2' must be pointers of struct symbols.
+*/
 int isStructEqual(Symbol *s1, Symbol *s2)
 {
     if (s1 == s2)
@@ -502,6 +519,12 @@ int isStructEqual(Symbol *s1, Symbol *s2)
     return 1;
 }
 
+
+/*
+@brief: Generate a temp variable symbol and set 'type->symAddr' to address of that temp variable.
+This function is useful when type->symAddr is pointer of a struct symbol, but we need a variable symbol
+which is that struct type.
+*/
 void genTmpVar(Type *type)
 {
     Symbol *tmp = (Symbol *)malloc(sizeof(Symbol));
@@ -513,8 +536,10 @@ void genTmpVar(Type *type)
     type->symAddr = tmp;
 }
 
+
 /* check whether variable(this is important, for struct and func, this function will occurr error) are equivalent.
-if equals return 1, else return 0
+@note: There are no requirements for 'type1->symAddr' or 'type2->symAddr'. They can be pointers of struct symbols
+or variable symbols. Because the function checks them and transforms them accordingly(if needed). 
 */
 int equal(Type type1, Type type2)
 {
@@ -571,9 +596,11 @@ int equal(Type type1, Type type2)
     return ret;
 }
 
+
 /*
 if legal reutrn 1 else return 0
-notes:args of function are children of pNode, symInfo is a pointer to the funciton symbol in symbol table
+notes:args of function are children of parameter 'pNode',
+parameter 'symInfo' is a pointer to the funciton symbol in symbol table
 */
 int checkArgs(Symbol *symInfo, Node *pNode)
 {
@@ -736,8 +763,7 @@ void checkStmt(Node *stmt, Type retType)
     }
 }
 
-/* if not struct type return 1, else return 0
- */
+
 int notStructType(Type type)
 {
     if (type.type == STRUCT)
@@ -750,6 +776,7 @@ int notStructType(Type type)
     return 1;
 }
 
+
 int notInt(Type type)
 {
     if (type.type == INT || type.type == INT_CONSTANT)
@@ -759,6 +786,7 @@ int notInt(Type type)
     return 1;
 }
 
+
 int notFloat(Type type)
 {
     if (type.type == FLOAT || type.type == FLOAT_CONSTANT)
@@ -767,6 +795,7 @@ int notFloat(Type type)
         return 0;
     return 1;
 }
+
 
 // check exp and put return value into expType
 void checkExp(Node *exp, Type *expRet)
@@ -1058,6 +1087,7 @@ void checkExp(Node *exp, Type *expRet)
     }
     }
 }
+
 
 // parse 'typeNode' and put the parsing result in 'type', mainly used to get return value function
 void getRetType(Node *typeNode, Type *type)

@@ -5,10 +5,6 @@
 #include <stdarg.h>
 #include <string.h>
 
-/*
-notes: there would be error if arguments of function call exceeds 100(at line 613).
-*/
-
 #define handleRead()              \
     Operand *op1 = genTmpVarOp(); \
     genCode(READ, 1, op1);        \
@@ -25,18 +21,18 @@ notes: there would be error if arguments of function call exceeds 100(at line 61
     else if (op->kind == ADDRESS_V)       \
     op = genOp(GET_VALUE_V, &(op->no))
 
-// all functions in this file are for generating codes
 
 extern Node *root;
 #define MAX_CODE_SIZE 0xffff
 
-int varNO = 1;
-int tmpNO = 1;
-int labelNO = 1;
+int varNO = 1;  // NO. of variables that appears in src codes.
+int tmpNO = 1;  // NO. of temp variables.
+int labelNO = 1;    // NO. of label.
 
 InnerCode *codes[MAX_CODE_SIZE];
 int codeNum = 0; // the number of codes
 
+// necessary but meaningless
 Symbol* meaningless;
 
 Symbol *findSymbol(char *name);
@@ -71,8 +67,9 @@ Operand *genOp(int kind, void *val)
 }
 
 /*
-if sym->var.op is NULL, then generate a new Operand and return it
-else return sym->var.op
+@param:
+    sym: pointer of a variable symbol in src code
+@note: The 'op' domain of the struct pointed by 'sym' may be modified by this function.
 */
 Operand *genVarOp(Symbol *sym)
 {
@@ -92,6 +89,16 @@ Operand *genVarOp(Symbol *sym)
 }
 
 
+/*
+@param:
+    kind: kind of code to be generated.
+    argc: the number of operands.
+    ...: pointers to operands.
+e.g.: genCode(PLUS, 3, op1, op2, result);
+@return: a pointer to the code newly generated.
+@note: This function use 'malloc' to apply for space for the code, 
+and it will modify global variable 'codeNum'.
+*/
 InnerCode *genCode(int kind, int argc, ...)
 {
     InnerCode *ptr = (InnerCode *)malloc(sizeof(InnerCode));
@@ -128,7 +135,12 @@ InnerCode *genCode(int kind, int argc, ...)
     return ptr;
 }
 
-
+/*
+@param:
+    sym: a pointer of a variable symbol.
+    size: size of the variable.
+@note: This function will set 'op' domain of 'sym'
+*/
 void genDEC(Symbol *sym, int size)
 {
     Operand *op1 = genOp(VARIABLE, &varNO);
@@ -170,7 +182,7 @@ int getCJMPkind(char *val)
         return JNE;
 }
 
-
+// This function will modify global variable 'tmpNO'
 Operand *genTmpVarOp()
 {
     Operand *op = genOp(TMP_VARIABLE, &tmpNO);
@@ -180,9 +192,10 @@ Operand *genTmpVarOp()
 
 
 /*
-get the offset relative to the starting position of the struct
-param:  sym -> a pointer of pointer of struct symbol
-        name -> name of target struct member
+@brief: Get the offset relative to the starting position of the struct.
+@param:  
+    sym: a pointer of a struct symbol
+    name: name of target struct member
 */
 int getOffset(Symbol *sym, char *name)
 {
@@ -200,7 +213,7 @@ int getOffset(Symbol *sym, char *name)
 }
 
 
-// get base address of symbol 'sym', only meaningful for struct and array variable
+// @brief: Get address of symbol 'sym', only meaningful for struct or array variable
 Operand *getBaseAddr(Symbol *sym)
 {
     Operand *op = sym->var.op;
@@ -231,21 +244,6 @@ Operand *getBaseAddr(Symbol *sym)
 }
 
 
-Operand *handleWrite(Node *exp)
-{
-    Operand *op1 = translateExp(exp->children[0]->children[0], &meaningless);
-    if (op1->kind == ADDRESS || op1->kind == ADDRESS_V)
-    {
-        Operand *tmp = op1;
-        op1 = genOp(TMP_VARIABLE, &tmpNO);
-        genCode(ASSIGN, 2, genOp(GET_VALUE, &(tmp->no)), op1);
-    }
-    genCode(WRITE, 1, op1);
-    int zero = 0;
-    return genOp(CONST_INT, &zero);
-}
-
-
 Operand *genLABEL()
 {
     Operand *op1 = genOp(LABEL_NO, &labelNO);
@@ -255,6 +253,10 @@ Operand *genLABEL()
 }
 
 
+/*
+@note: 'listHead' is address of the argument, 
+so this function modifies the value of the argument.
+*/
 void add2list(CodeList *listHead, InnerCode *pCode)
 {
     CodeList ptr = (CodeList)malloc(sizeof(CodeListNode));
@@ -264,7 +266,7 @@ void add2list(CodeList *listHead, InnerCode *pCode)
 }
 
 
-// merge list1 and list2
+
 CodeList mergeList(CodeList list1, CodeList list2)
 {
     if (list1 == NULL)
@@ -288,6 +290,10 @@ void backpatch(CodeList list, Operand *label)
 }
 
 
+/*
+@param:
+    tlist, flist: address of a CodeList type argument
+*/
 void translateBoolExp(Node *exp, CodeList *tlist, CodeList *flist)
 {
     if (exp->type == RELOP_OP)
@@ -325,7 +331,7 @@ void translateBoolExp(Node *exp, CodeList *tlist, CodeList *flist)
     {
     }    
 
-    // if logical operator is '!', then exchange truelist and falselist
+    // If logical operator is '!', then exchange truelist and falselist.
     if (exp->val[0] == '!')
     {
         CodeList tmp;
@@ -360,7 +366,7 @@ void translateBoolExp(Node *exp, CodeList *tlist, CodeList *flist)
         *tlist = mergeList(tlist1, tlist2);
         *flist = flist2;
     }
-    // exp
+    // Expressions like arithmatic operation, assign operation may occurr in bool expression.
     else
     {
         int val = 0;
@@ -376,13 +382,13 @@ void translateBoolExp(Node *exp, CodeList *tlist, CodeList *flist)
 
 
 /*
-para:
+@para:
     exp: root of expression ast
-    retSym: a pointer of pointer of a variable symbol.
+    retSym: address of Symbol* type argument
+@return: result of expression
 */
 Operand *translateExp(Node *exp, Symbol **retSym)
 {
-    // base case
     if (exp->type == IDENTIFIER)
     {
         Symbol *sym = findSymbol(exp->val);
@@ -603,6 +609,9 @@ Operand *translateExp(Node *exp, Symbol **retSym)
         return result;
     }
 
+    /*
+    note: There would be error if arguments of function call exceeds 100.
+    */
     case FUNC_CALL:
     {
 
@@ -610,11 +619,21 @@ Operand *translateExp(Node *exp, Symbol **retSym)
         {
             handleRead();
         }
-
         if (strcmp(exp->children[0]->val, "write") == 0)
         {
-            return handleWrite(exp);
+            Operand *op1 = translateExp(exp->children[0]->children[0], &meaningless);
+            if (op1->kind == ADDRESS || op1->kind == ADDRESS_V)
+            {
+                Operand *tmp = op1;
+                op1 = genOp(TMP_VARIABLE, &tmpNO);
+                genCode(ASSIGN, 2, genOp(GET_VALUE, &(tmp->no)), op1);
+            }
+            genCode(WRITE, 1, op1);
+            int zero = 0;
+            return genOp(CONST_INT, &zero);
         }
+
+        // pass the arguments
         Node *argList = exp->children[0];
         Symbol *sym = findSymbol(exp->children[0]->val);
         Symbol **paras = sym->func.paras;
@@ -645,6 +664,7 @@ Operand *translateExp(Node *exp, Symbol **retSym)
         {
             genCode(ARG, 1, args[i]);
         }
+
         Operand *op1 = genOp(NAME, exp->children[0]->val);
         Operand *result = genTmpVarOp();
         genCode(CALL, 2, op1, result);
