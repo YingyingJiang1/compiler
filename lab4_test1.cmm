@@ -1,0 +1,18 @@
+int print(int arr[2])
+{
+  if(arr[0] < arr[1])
+    write(arr[1]);
+  else
+    write(arr[0]);
+  return 0;
+}
+
+
+int main()
+{
+  int arr[2];
+  arr[0] = read();
+  arr[1] = read();
+  print(arr);
+  return 0;
+}
