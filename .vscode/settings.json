@@ -1,9 +1,0 @@
-{
-    "files.associations": {
-        "random": "cpp",
-        "ast.h": "c",
-        "typeinfo": "c",
-        "innercode.h": "c"
-    },
-    "C_Cpp.errorSquiggles": "EnabledIfIncludesResolve"
-}
