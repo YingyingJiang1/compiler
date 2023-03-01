@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "cmath": "cpp",
+        "innercode.h": "c",
+        "stdarg.h": "c"
+    }
+}
