@@ -12,7 +12,7 @@ Needs two arguments:
 ### File Structure And Function Description
 
 front-end   
-	|\_\_\_\_\_\_ lex-and-syn **（Use flex and bison to complete lexical and syntax analysis.)**  
+&ensp;&ensp;&ensp;&ensp|\_\_\_\_\_\_ lex-and-syn **（Use flex and bison to complete lexical and syntax analysis.)**  
 	  |\_\_\_\_\_\_ ast **（Create abstract syntax tree.)**  
 	  |\_\_\_\_\_\_ semantic **(Complete semantic analysis and generate ir during semantic analysis.)**  
 	  |\_\_\_\_\_\_ st **(Create the symbol table and implement operations on the symbol table.)**  
