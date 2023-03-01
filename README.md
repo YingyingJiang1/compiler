@@ -28,6 +28,7 @@ front-end
 back-end **(Generate assembly code based on ir.)**
 
 output
+
 	|\_\_\_\_\_\_ outputCode.c **(Output ir.)**
 
 
