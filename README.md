@@ -5,7 +5,7 @@ A compiler of C-- language, whose syntax is defined in **Appendix_A.pdf**.
 Needs two arguments: 
 
 + arg1: src file.
-+ arg2: output file(an assembly file).
++ arg2: output file(an assembly file).  
 
 
 
@@ -22,7 +22,7 @@ front-end
 back-end **(Generate assembly code based on ir.)**  
 
 output  
-&ensp;&ensp;&ensp;&ensp;|\_\_\_\_\_\_ outputCode.c **(Output ir.)**  
+&ensp;&ensp;&ensp;&ensp;|\_\_\_\_\_\_ outputCode.c **(Output ir.)**    
 
 
 
