@@ -1,12 +1,12 @@
 #ifndef GEN_CODE_H
 #define GEN_CODE_H
 
-#include "innerCode.h"
+#include "ir.h"
 
 typedef struct Operand Operand;
 typedef struct Node Node;
 typedef struct Symbol Symbol;
-extern InnerCode* codes[];
+extern IR* codes[];
 extern int codeNum;
 extern int varNO;
 
@@ -20,7 +20,7 @@ Operand* genLABEL();
 void genRETURN(Operand* op1);
 
 
-InnerCode* genCode(int kind, int argc, ...);
+IR* genCode(int kind, int argc, ...);
 
 // Generates operand.
 Operand* genOp(int kind, void* val);

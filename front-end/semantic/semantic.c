@@ -5,7 +5,7 @@
 #include "errorType.h"
 #include "../ast/ast.h"
 #include "../st/st.h"
-#include "../inner-code/genCode.h"
+#include "../ir/genCode.h"
 
 #define isInt(expType) expType.type == INT || expType.type == INT_CONSTANT || \
                            (expType.type == INT_ARRAY && expType.dimension == 0)

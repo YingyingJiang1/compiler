@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "innerCode.h"
+#include "ir.h"
 #include "../ast/ast.h"
 #include "../st/st.h"
 
@@ -31,7 +31,7 @@ int varNO = 1;  // NO. of variables that appears in src codes.
 int tmpNO = 1;  // NO. of temp variables.
 int labelNO = 1;    // NO. of label.
 
-InnerCode *codes[MAX_CODE_SIZE];
+IR *codes[MAX_CODE_SIZE];
 int codeNum = 0; // the number of codes
 
 // necessary but meaningless
@@ -104,9 +104,9 @@ return: a pointer to the code newly generated.
 note: This function use 'malloc' to apply for space for the code, 
 and it will modify global variable 'codeNum'.
 */
-InnerCode *genCode(int kind, int argc, ...)
+IR *genCode(int kind, int argc, ...)
 {
-    InnerCode *ptr = (InnerCode *)malloc(sizeof(InnerCode));
+    IR *ptr = (IR *)malloc(sizeof(IR));
     ptr->kind = kind;
     
     va_list valist;
@@ -271,7 +271,7 @@ Operand *genLABEL()
 note: 'listHead' is address of the argument, 
 so this function modifies the value of the argument.
 */
-void add2list(CodeList *listHead, InnerCode *pCode)
+void add2list(CodeList *listHead, IR *pCode)
 {
     CodeList ptr = (CodeList)malloc(sizeof(CodeListNode));
     ptr->pCode = pCode;
@@ -617,7 +617,7 @@ Operand *translateExp(Node *exp, Symbol **retSym)
         genCode(ASSIGN, 2, genOp(CONST_INT, &trueVal), result);
         backpatch(tlist, label1);
 
-        InnerCode* gotoCode = genCode(JMP, 1, NULL);
+        IR* gotoCode = genCode(JMP, 1, NULL);
 
         Operand *label2 = genLABEL();
         genCode(ASSIGN, 2, genOp(CONST_INT, &falseVal), result);

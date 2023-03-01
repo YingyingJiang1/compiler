@@ -1,11 +1,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "../front-end/inner-code/innerCode.h"
+#include "../front-end/ir/ir.h"
 
 #define BUF_SIZE 0xffff
 
-extern InnerCode* codes[];
+extern IR* codes[];
 extern int codeNum;
 
 char buffer[BUF_SIZE];
@@ -51,7 +51,7 @@ char* getPrefix(Operand* op)
 
 // didn't consider float type
 // + = * /, type of operands are VARIABLE or TMP_VARIABLE or CONST_INT
-void out3opsCode(char op, InnerCode* code)
+void out3opsCode(char op, IR* code)
 {
     Operand* op1, *op2, *op3;
     char* str1, *str2, *str3;
@@ -67,14 +67,14 @@ void out3opsCode(char op, InnerCode* code)
 
 
 // PARAM, ARG, RETURN, READ, WRITE, 
-void out1opCode(char* ctype, InnerCode* code)
+void out1opCode(char* ctype, IR* code)
 {
     Operand* op1 = code->_3ops.op1;
     char* str = getPrefix(op1);
     length = length + sprintf(buffer+length, "%s %s%d\n", ctype, str, op1->no);
 }
 
-void outCJMP(InnerCode* code)
+void outCJMP(IR* code)
 {
     char relop[3];
     if(code->kind == JG)

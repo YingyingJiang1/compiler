@@ -30,18 +30,18 @@ typedef struct Operand
 }Operand;
 
 // struct of three address code
-typedef struct InnerCode
+typedef struct IR
 {
     enum {ASSIGN, PLUS, MINUS, MUL, DIV, AND, OR, NOT, PARAM, ARG, 
         CALL, READ, WRITE, LABEL, FUNCTION, RETURN, DEC, JMP, JG, JGE, 
         JL, JLE, JE, JNE} kind;
     struct {Operand* result, *op1, *op2;} _3ops; 
 
-}InnerCode;
+}IR;
 
 typedef struct CodeListNode
 {
-    InnerCode* pCode;
+    IR* pCode;
     struct CodeListNode* next;
 }CodeListNode;
 

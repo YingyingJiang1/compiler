@@ -1,7 +1,7 @@
 // Naive register allocation algor
 
 
-#include "../front-end/inner-code/innerCode.h"
+#include "../front-end/ir/ir.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -22,7 +22,7 @@
 #define pop() \
     offToFp = (int)stack[top--]                                            
 
-extern InnerCode* codes[];
+extern IR* codes[];
 extern int codeNum;
 extern char* buffer;
 
@@ -44,7 +44,7 @@ static int saved = 0;
 static int curCode = 0;
 static int regr = -1, reg1 = -1, reg2 = -1;
 
-void allocateReg(InnerCode*);
+void allocateReg(IR*);
 void genTargetCode();
 void calleeRestoreRegs();
 void callerSaveRegs();
@@ -121,7 +121,7 @@ void genTargetCode()
     emitWrite();
     for(; curCode < codeNum; ++curCode)
     {
-        InnerCode* ir = codes[curCode];
+        IR* ir = codes[curCode];
         Operand* op1 = ir->_3ops.op1, *op2 = ir->_3ops.op2, *result = ir->_3ops.result;
         switch(ir->kind)
         {               
@@ -242,7 +242,7 @@ void genTargetCode()
                 int j = curCode;
                 while(codes[j]->kind == ARG)
                 {
-                    InnerCode* ir = codes[j];
+                    IR* ir = codes[j];
                     Operand* op1 = ir->_3ops.op1;
                     allocateReg(ir); 
                     ++count;
@@ -478,7 +478,7 @@ Operand* helper(int kind1, int kind2,Operand* op)
     {
         for(int j = curCode-1; j >= 0; --j)
         {
-            InnerCode* ir = codes[j];
+            IR* ir = codes[j];
             Operand* op1 = ir->_3ops.op1, *op2 = ir->_3ops.op2, *result = ir->_3ops.result;            
             if(op1 && op1->kind == kind2 && op1->no == op->no)
                 return op1;
@@ -494,7 +494,7 @@ Operand* helper(int kind1, int kind2,Operand* op)
 
 void emitAssignCode(int i)
 {
-    InnerCode* ir = codes[i];
+    IR* ir = codes[i];
     Operand* op1 = ir->_3ops.op1, *result = ir->_3ops.result;
     Operand* ret = NULL;
     int regNo = getReg(result, -1, -1);
@@ -574,7 +574,7 @@ void loadToReg(Operand* op, int regNo)
 }
 
 
-// void allocateReg(InnerCode* code)
+// void allocateReg(IR* code)
 // {
 //     Operand* op1 = code->_3ops.op1, *op2 = code->_3ops.op2, *result = code->_3ops.result;    
 //     reg1 = reg2 = regr = -1;  
@@ -615,7 +615,7 @@ void loadToReg(Operand* op, int regNo)
 // }
 
 
-void allocateReg(InnerCode* code)
+void allocateReg(IR* code)
 {
     Operand* op1 = code->_3ops.op1, *op2 = code->_3ops.op2, *result = code->_3ops.result;
     reg1 = reg2 = regr = -1;
