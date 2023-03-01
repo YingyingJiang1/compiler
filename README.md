@@ -11,18 +11,18 @@ Needs two arguments:
 
 ### File Structure And Function Description
 
-front-end 
+front-end   
 	|\_\_\_\_\_\_ lex-and-syn **（Use flex and bison to complete lexical and syntax analysis.)**  
-	|\_\_\_\_\_\_ ast **（Create abstract syntax tree.)**
-	|\_\_\_\_\_\_ semantic **(Complete semantic analysis and generate ir during semantic analysis.)**
-	|\_\_\_\_\_\_ st **(Create the symbol table and implement operations on the symbol table.)**
-	|\_\_\_\_\_\_ ir **(Define the structure of ir and implement the generation of ir.)**
-	|\_\_\_\_\_\_ optimizaton **(Complete ir optimization based on framework code.)**
+	|\_\_\_\_\_\_ ast **（Create abstract syntax tree.)**  
+	|\_\_\_\_\_\_ semantic **(Complete semantic analysis and generate ir during semantic analysis.)**  
+	|\_\_\_\_\_\_ st **(Create the symbol table and implement operations on the symbol table.)**  
+	|\_\_\_\_\_\_ ir **(Define the structure of ir and implement the generation of ir.)**  
+	|\_\_\_\_\_\_ optimizaton **(Complete ir optimization based on framework code.)**  
 
-back-end **(Generate assembly code based on ir.)**
+back-end **(Generate assembly code based on ir.)**  
 
-output
-	|\_\_\_\_\_\_ outputCode.c **(Output ir.)**
+output  
+	|\_\_\_\_\_\_ outputCode.c **(Output ir.)**  
 
 
 
