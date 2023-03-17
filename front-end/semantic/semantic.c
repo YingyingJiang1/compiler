@@ -84,7 +84,7 @@ void addPDfunc(int flag)
 }
 
 
-// root of ast is an EXT_DEF_LIST, its children node is either GLOABAL_VAR_DEF type or FUNC_DEF type.
+// root of ast is an EXT_DEF_LIST, its children node are GLOABAL_VAR_DEF type node, FUNC_DEF type, FUNC_DEC type node.
 void semanticAnalysis(Node *ast)
 {
     memset(globalST, 0, sizeof(Symbol *) * G_SIZE);
