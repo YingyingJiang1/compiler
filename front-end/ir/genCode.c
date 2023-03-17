@@ -498,7 +498,6 @@ Operand *translateExp(Node *exp, Symbol **retSym)
         L:
             op2 = translateExp(exp->children[i], &meaningless);
             expTypeCheck(op2);
-            // there is need to execute plus operation when following condition meets
             if (op1->constInt == 0 && op2->constInt == 0)
                 continue;
             if (op1->constInt == 0)
