@@ -397,7 +397,6 @@ void checkCompSt(Node *pNode, Type retType)
     Node *compSt = pNode;
     SymbolTable lst = NULL;
 
-    // put paras of function into lst
     if (pNode->type == FUNC_DEF)
     {
         /* 
@@ -421,6 +420,8 @@ void checkCompSt(Node *pNode, Type retType)
             lst = (Symbol **)malloc(sizeof(Symbol *) * size);
             memset(lst, 0, sizeof(Symbol *) * size);
             push(lst, size);
+          
+            // put paras of function into lst
             for (int i = 0; i < paraNum; ++i)
             {
                 Type type;
