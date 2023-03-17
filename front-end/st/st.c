@@ -7,8 +7,7 @@
 
 /*
 Using hash table and close addressing to handle conflicts for hashing.
-Using linked list to connect variables in the same level scope and
-implementing a stack to store current level scope and making its top points to the head of the list.
+Implementing a stack to store level scope and making its top element be the current scope.
 */
 
 Stack scope;
