@@ -5,16 +5,10 @@
 #include "../ast/ast.h"
 #include "../semantic/errorType.h"
 
-/* bugs: can't correctly handle define parameters when defining a struct, but I think no body would do like that!*/
-
 /*
-using imperative style to implement symbol table to support multiple scopes;
-using hash table and close addressing to handle conflicts;
-using linked list to connect variables in the same level scope and
-implementing a stack to store current level scope and making its top points to the head of the list;
-
-same level of scope means in the same block, for eaxmple:{int a, b;{int c, d}},
-a, b are in the same level of scope and c, d are in the same level of scope
+Using hash table and close addressing to handle conflicts for hashing.
+Using linked list to connect variables in the same level scope and
+implementing a stack to store current level scope and making its top points to the head of the list.
 */
 
 Stack scope;
