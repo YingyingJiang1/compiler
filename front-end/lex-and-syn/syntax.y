@@ -48,7 +48,7 @@ int structNo = 1;
 
 
 %%
-/* For the purpose of the subsequent semantic analysis, many meaningless nodes are preserved
+/* For the purpose of the subsequent semantic analysis, many high-level nodes are preserved
 when generating abstract syntax tree, such as,  "ExtDefList", "funcDef"...*/
 
 /* High-level definitions */
